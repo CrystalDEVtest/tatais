@@ -1,0 +1,32 @@
+# Service System - Dependencies
+
+# Web framework
+Django==5.2.13
+
+# Microsoft SQL Server backend (Django 5.x compatible)
+mssql-django>=1.4
+
+# ODBC Driver
+pyodbc>=4.0.39
+
+# Forms
+django-crispy-forms>=2.1
+crispy-bootstrap5>=2024.10
+
+# Charts
+django-chartjs>=2.3.0
+
+# REST API
+djangorestframework>=3.15.0
+
+# Image processing
+Pillow>=10.0.0
+
+# WSGI server for production
+gunicorn>=21.2.0
+
+# Report export
+openpyxl==3.1.5
+python-docx==1.1.2
+
+qrcode>=7.4
