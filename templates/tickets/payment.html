@@ -1,0 +1,798 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Оплата — {{ payment.payment_id }} — ТатАИСнефть{% endblock %}
+
+{% block extra_css %}
+<style>
+    .payment-container {
+        max-width: 600px;
+        margin: 2rem auto;
+    }
+
+    .payment-card {
+        background: white;
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+    }
+
+    .payment-card-header {
+        background: linear-gradient(135deg, var(--primary), #007a38);
+        color: white;
+        padding: 1.5rem 2rem;
+        text-align: center;
+    }
+
+    .payment-card-header h3 {
+        font-weight: 800;
+        margin: 0 0 0.3rem 0;
+        font-size: 1.2rem;
+    }
+
+    .payment-card-header p {
+        margin: 0;
+        opacity: 0.85;
+        font-size: 0.88rem;
+    }
+
+    .payment-card-body {
+        padding: 2rem;
+    }
+
+    .payment-amount-block {
+        text-align: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 2px dashed #e0e0e0;
+    }
+
+    .payment-amount {
+        font-size: 2.5rem;
+        font-weight: 900;
+        color: var(--primary);
+        line-height: 1;
+    }
+
+    .payment-amount span {
+        font-size: 1.5rem;
+        font-weight: 600;
+    }
+
+    .payment-amount-label {
+        color: var(--gray);
+        font-size: 0.85rem;
+        margin-top: 0.3rem;
+    }
+
+    /* QR Tabs */
+    .qr-tabs {
+        display: flex;
+        border-bottom: 2px solid #e9ecef;
+        margin-bottom: 0;
+    }
+
+    .qr-tab {
+        flex: 1;
+        text-align: center;
+        padding: 0.8rem 0.5rem;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 0.85rem;
+        color: var(--gray);
+        border-bottom: 3px solid transparent;
+        transition: all 0.2s;
+        background: #fafafa;
+    }
+
+    .qr-tab:hover {
+        color: var(--primary);
+        background: #f0faf4;
+    }
+
+    .qr-tab.active {
+        color: var(--primary);
+        border-bottom-color: var(--primary);
+        background: white;
+    }
+
+    .qr-tab i {
+        display: block;
+        font-size: 1.2rem;
+        margin-bottom: 0.3rem;
+    }
+
+    .qr-tab-content {
+        display: none;
+    }
+
+    .qr-tab-content.active {
+        display: block;
+    }
+
+    .qr-wrapper {
+        text-align: center;
+        margin: 1.5rem 0;
+        padding: 1.5rem;
+        background: #f8f9fa;
+        border-radius: var(--radius);
+    }
+
+    .qr-wrapper img {
+        max-width: 220px;
+        height: auto;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+
+    .qr-instruction {
+        margin-top: 1rem;
+        font-size: 0.9rem;
+        color: #555;
+        line-height: 1.6;
+    }
+
+    .qr-instruction i {
+        color: var(--primary);
+        margin-right: 4px;
+    }
+
+    /* Bank details */
+    .bank-details {
+        background: #f8f9fa;
+        border-radius: var(--radius);
+        padding: 1.5rem;
+        margin: 1.5rem 0;
+    }
+
+    .bank-details h6 {
+        font-weight: 700;
+        font-size: 0.9rem;
+        color: #333;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .bank-details h6 i {
+        color: var(--primary);
+    }
+
+    .detail-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        padding: 0.6rem 0;
+        border-bottom: 1px solid #eee;
+        font-size: 0.85rem;
+    }
+
+    .detail-row:last-child {
+        border-bottom: none;
+    }
+
+    .detail-row .detail-label {
+        color: #888;
+        flex-shrink: 0;
+        min-width: 130px;
+    }
+
+    .detail-row .detail-value {
+        font-weight: 600;
+        color: #222;
+        text-align: right;
+        word-break: break-all;
+        font-family: 'Consolas', 'Monaco', monospace;
+        font-size: 0.82rem;
+    }
+
+    .detail-row .detail-value.long {
+        font-family: inherit;
+        font-size: 0.78rem;
+        line-height: 1.4;
+    }
+
+    .btn-copy {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 8px;
+        font-size: 0.72rem;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        color: #666;
+        cursor: pointer;
+        transition: all 0.2s;
+        margin-left: 6px;
+    }
+
+    .btn-copy:hover {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+    }
+
+    .btn-copy.copied {
+        background: #155724;
+        color: white;
+        border-color: #155724;
+    }
+
+    .btn-copy-all {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        width: 100%;
+        padding: 0.7rem;
+        margin-top: 1rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        background: linear-gradient(135deg, var(--primary), #007a38);
+        color: white;
+        border: none;
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-copy-all:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0,152,70,0.3);
+    }
+
+    .btn-copy-all.copied {
+        background: #155724;
+    }
+
+    /* Recipient info */
+    .recipient-info {
+        background: #f0faf4;
+        border: 1px solid #d4edda;
+        border-radius: var(--radius-sm);
+        padding: 1rem 1.2rem;
+        margin: 1.5rem 0;
+    }
+
+    .recipient-info h6 {
+        font-weight: 700;
+        font-size: 0.85rem;
+        color: #155724;
+        margin-bottom: 0.5rem;
+    }
+
+    .recipient-info .info-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.35rem 0;
+        font-size: 0.88rem;
+    }
+
+    .recipient-info .info-item .label {
+        color: #666;
+    }
+
+    .recipient-info .info-item .value {
+        font-weight: 600;
+        color: #333;
+    }
+
+    /* Actions */
+    .payment-actions {
+        display: flex;
+        gap: 0.75rem;
+        margin-top: 1.5rem;
+    }
+
+    .payment-actions .btn {
+        flex: 1;
+        padding: 0.8rem 1rem;
+        font-weight: 700;
+        font-size: 0.95rem;
+        border-radius: var(--radius-sm);
+    }
+
+    .btn-confirm-pay {
+        background: linear-gradient(135deg, var(--primary), #007a38);
+        border: none;
+        color: white;
+        transition: all 0.3s;
+    }
+
+    .btn-confirm-pay:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0,152,70,0.3);
+        color: white;
+    }
+
+    .btn-on-site {
+        background: white;
+        border: 2px solid var(--primary);
+        color: var(--primary);
+    }
+
+    .btn-on-site:hover {
+        background: rgba(0,152,70,0.05);
+        color: var(--primary);
+    }
+
+    .payment-timer {
+        text-align: center;
+        margin-top: 1rem;
+        font-size: 0.85rem;
+        color: var(--gray);
+    }
+
+    .payment-timer i {
+        margin-right: 4px;
+    }
+
+    .payment-timer .timer-danger {
+        color: #dc3545;
+        font-weight: 700;
+    }
+
+    .payment-ticket-info {
+        background: #f8f9fa;
+        border-radius: var(--radius-sm);
+        padding: 0.8rem 1rem;
+        margin-top: 1rem;
+        font-size: 0.82rem;
+        color: #666;
+    }
+
+    .payment-ticket-info a {
+        color: var(--primary);
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+    .payment-ticket-info a:hover {
+        text-decoration: underline;
+    }
+
+    /* Steps */
+    .step-indicator {
+        display: flex;
+        justify-content: center;
+        gap: 0;
+        margin-bottom: 1.5rem;
+    }
+
+    .step {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .step-number {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 0.85rem;
+        border: 2px solid #ddd;
+        color: #bbb;
+        background: white;
+    }
+
+    .step-number.active {
+        border-color: var(--primary);
+        color: white;
+        background: var(--primary);
+    }
+
+    .step-number.done {
+        border-color: var(--primary);
+        color: white;
+        background: var(--primary);
+    }
+
+    .step-label {
+        font-size: 0.8rem;
+        color: #bbb;
+        font-weight: 500;
+    }
+
+    .step-label.active { color: var(--primary); font-weight: 700; }
+    .step-label.done { color: var(--primary); }
+
+    .step-line {
+        width: 50px;
+        height: 2px;
+        background: #ddd;
+        margin: 0 0.5rem;
+    }
+
+    .step-line.done { background: var(--primary); }
+
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.03); }
+    }
+
+    .qr-pulse { animation: pulse 2.5s infinite; }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+        .payment-card-body { padding: 1.2rem; }
+        .payment-amount { font-size: 2rem; }
+        .detail-row { flex-direction: column; gap: 2px; }
+        .detail-row .detail-value { text-align: left; }
+        .payment-actions { flex-direction: column; }
+        .qr-tab { font-size: 0.75rem; padding: 0.6rem 0.3rem; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="payment-container fade-in">
+        <!-- Breadcrumb -->
+        <nav aria-label="breadcrumb" style="font-size: 0.82rem; margin-bottom: 1rem;">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}" style="color: var(--gray);">Главная</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'ticket_detail' ticket.id %}" style="color: var(--gray);">Заявка #{{ ticket.ticket_number }}</a></li>
+                <li class="breadcrumb-item active" style="color: var(--dark);">Оплата</li>
+            </ol>
+        </nav>
+
+        <div class="payment-card">
+            <!-- Header -->
+            <div class="payment-card-header">
+                {% if is_active %}
+                <h3><i class="fas fa-qrcode me-2"></i> Оплата услуг</h3>
+                <p>Выберите удобный способ оплаты</p>
+                {% elif payment.status == 'completed' %}
+                <h3><i class="fas fa-check-circle me-2"></i> Оплата получена</h3>
+                <p>Платёж успешно подтверждён</p>
+                {% elif payment.status == 'on_site' %}
+                <h3><i class="fas fa-hand-holding-usd me-2"></i> Оплата на месте</h3>
+                <p>Оплата при визите специалиста</p>
+                {% elif payment.status == 'expired' %}
+                <h3><i class="fas fa-clock me-2"></i> Срок оплаты истёк</h3>
+                <p>Создайте новый платёж</p>
+                {% else %}
+                <h3><i class="fas fa-ban me-2"></i> Платёж {{ payment.get_status_display }}</h3>
+                {% endif %}
+            </div>
+
+            <!-- Body -->
+            <div class="payment-card-body">
+                <!-- Step indicator -->
+                {% if is_active %}
+                <div class="step-indicator">
+                    <div class="step">
+                        <div class="step-number done"><i class="fas fa-check" style="font-size: 0.7rem;"></i></div>
+                        <span class="step-label done">Создан</span>
+                    </div>
+                    <div class="step-line done"></div>
+                    <div class="step">
+                        <div class="step-number active">2</div>
+                        <span class="step-label active">Оплата</span>
+                    </div>
+                    <div class="step-line"></div>
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <span class="step-label">Готово</span>
+                    </div>
+                </div>
+                {% elif payment.status == 'completed' %}
+                <div class="step-indicator">
+                    <div class="step">
+                        <div class="step-number done"><i class="fas fa-check" style="font-size: 0.7rem;"></i></div>
+                        <span class="step-label done">Создан</span>
+                    </div>
+                    <div class="step-line done"></div>
+                    <div class="step">
+                        <div class="step-number done"><i class="fas fa-check" style="font-size: 0.7rem;"></i></div>
+                        <span class="step-label done">Оплата</span>
+                    </div>
+                    <div class="step-line done"></div>
+                    <div class="step">
+                        <div class="step-number done"><i class="fas fa-check" style="font-size: 0.7rem;"></i></div>
+                        <span class="step-label done">Готово</span>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Amount -->
+                <div class="payment-amount-block">
+                    <div class="payment-amount">{{ payment.amount }} <span>&#8381;</span></div>
+                    <div class="payment-amount-label">{{ payment.description }}</div>
+                </div>
+
+                {% if is_active %}
+                <!-- QR Tabs -->
+                <div class="qr-tabs">
+                    <div class="qr-tab active" onclick="switchTab('link')">
+                        <i class="fas fa-link"></i>
+                        По ссылке
+                    </div>
+                    <div class="qr-tab" onclick="switchTab('details')">
+                        <i class="fas fa-university"></i>
+                        По реквизитам
+                    </div>
+                </div>
+
+                <!-- Tab 1: Payment Link QR -->
+                <div class="qr-tab-content active" id="tab-link">
+                    <div class="qr-wrapper qr-pulse">
+                        <img src="data:image/png;base64,{{ qr_base64 }}" alt="QR-код для оплаты">
+                        <div class="qr-instruction">
+                            <p><i class="fas fa-camera"></i> Наведите камеру телефона на QR-код</p>
+                            <p style="margin-top: 0.3rem; font-size: 0.82rem; color: #888;">
+                                Откроется платёжная форма Т-Банка для оплаты картой
+                            </p>
+                        </div>
+                    </div>
+
+                    <div style="text-align: center; margin-bottom: 0.5rem;">
+                        <a href="https://tbank.ru/cf/8S2MkaLirPr" target="_blank"
+                           class="btn btn-confirm-pay" style="display: inline-flex; align-items: center; gap: 6px; text-decoration: none; padding: 0.7rem 1.5rem; font-size: 0.9rem;">
+                            <i class="fas fa-external-link-alt"></i> Открыть платёжную форму
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Tab 2: Bank Details QR -->
+                <div class="qr-tab-content" id="tab-details">
+                    <div class="qr-wrapper">
+                        <!-- Было что-то вроде: -->
+<!-- Замените на: -->
+                        <img src="{% static 'img/qr_details.jpg' %}" alt="QR реквизиты" style="width: 220px; height: 220px; border-radius: 12px; border: 2px solid #e2e8f0;">
+                        <div class="qr-instruction">
+                            <p><i class="fas fa-camera"></i> Откройте приложение банка и сканируйте</p>
+                            <p style="margin-top: 0.3rem; font-size: 0.82rem; color: #888;">
+                                Работает в Сбербанк Онлайн и Т-Банк
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Full Bank Details -->
+                    <div class="bank-details">
+                        <h6><i class="fas fa-file-invoice"></i> Реквизиты для перевода</h6>
+
+                        <div class="detail-row">
+                            <span class="detail-label">Получатель</span>
+                            <span class="detail-value long">
+                                {{ recipient.name }}
+                                <button class="btn-copy" onclick="copyText(this, '{{ recipient.name }}')">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </span>
+                        </div>
+
+                        <div class="detail-row">
+                            <span class="detail-label">Номер счёта</span>
+                            <span class="detail-value">
+                                {{ recipient.account }}
+                                <button class="btn-copy" onclick="copyText(this, '{{ recipient.account }}')">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </span>
+                        </div>
+
+                        <div class="detail-row">
+                            <span class="detail-label">Банк</span>
+                            <span class="detail-value">
+                                {{ recipient.bank }}
+                                <button class="btn-copy" onclick="copyText(this, '{{ recipient.bank }}')">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </span>
+                        </div>
+
+                        <div class="detail-row">
+                            <span class="detail-label">БИК</span>
+                            <span class="detail-value">
+                                {{ recipient.bic }}
+                                <button class="btn-copy" onclick="copyText(this, '{{ recipient.bic }}')">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </span>
+                        </div>
+
+                        <div class="detail-row">
+                            <span class="detail-label">Корр. счёт</span>
+                            <span class="detail-value">
+                                {{ recipient.corr_account }}
+                                <button class="btn-copy" onclick="copyText(this, '{{ recipient.corr_account }}')">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </span>
+                        </div>
+
+                        <div class="detail-row">
+                            <span class="detail-label">ИНН</span>
+                            <span class="detail-value">
+                                {{ recipient.inn }}
+                                <button class="btn-copy" onclick="copyText(this, '{{ recipient.inn }}')">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </span>
+                        </div>
+
+                        <div class="detail-row">
+                            <span class="detail-label">КПП</span>
+                            <span class="detail-value">
+                                {{ recipient.kpp }}
+                                <button class="btn-copy" onclick="copyText(this, '{{ recipient.kpp }}')">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </span>
+                        </div>
+
+                        <div class="detail-row">
+                            <span class="detail-label">Сумма</span>
+                            <span class="detail-value" style="color: var(--primary); font-size: 1rem;">
+                                {{ payment.amount }} &#8381;
+                            </span>
+                        </div>
+
+                        <div class="detail-row">
+                            <span class="detail-label">Назначение</span>
+                            <span class="detail-value long">
+                                Перевод средств по договору № {{ recipient.contract }} {{ recipient.name }} НДС не облагается
+                                <button class="btn-copy" onclick="copyText(this, 'Перевод средств по договору № {{ recipient.contract }} {{ recipient.name }} НДС не облагается')">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </span>
+                        </div>
+
+                        <button class="btn-copy-all" onclick="copyAll(this)">
+                            <i class="fas fa-clipboard-list"></i>
+                            Скопировать все реквизиты
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Timer -->
+                <div class="payment-timer" id="paymentTimer">
+                    <i class="fas fa-clock"></i>
+                    <span id="timerText">Ожидаем подтверждение оплаты</span>
+                </div>
+
+                <!-- Recipient Info -->
+                <div class="recipient-info">
+                    <h6><i class="fas fa-user-check me-1"></i> Получатель платежа</h6>
+                    <div class="info-item">
+                        <span class="label">Имя</span>
+                        <span class="value">{{ recipient.name }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Телефон (СБП)</span>
+                        <span class="value">{{ recipient.phone }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Банк</span>
+                        <span class="value">{{ recipient.bank }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">ID платежа</span>
+                        <span class="value" style="font-size: 0.8rem;">{{ payment.payment_id }}</span>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="payment-actions">
+                    <form method="post" action="{% url 'payment_confirm' payment.payment_id %}" style="flex: 1;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-confirm-pay w-100">
+                            <i class="fas fa-check me-1"></i> Я оплатил
+                        </button>
+                    </form>
+                    <form method="post" action="{% url 'payment_on_site' payment.payment_id %}" style="flex: 1;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-on-site w-100">
+                            <i class="fas fa-home me-1"></i> Оплата на месте
+                        </button>
+                    </form>
+                </div>
+
+                <div style="margin-top: 1rem; text-align: center;">
+                    <p style="font-size: 0.8rem; color: #aaa;">
+                        После оплаты нажмите «Я оплатил» для подтверждения<br>
+                        и получения чека на email.
+                    </p>
+                </div>
+                {% endif %}
+
+                <!-- Ticket Info -->
+                <div class="payment-ticket-info" style="margin-top: 1.5rem;">
+                    <i class="fas fa-ticket-alt me-1"></i>
+                    Заявка: <a href="{% url 'ticket_detail' ticket.id %}">#{{ ticket.ticket_number }}</a>
+                    &nbsp;·&nbsp;
+                    <i class="fas fa-map-marker-alt me-1"></i>
+                    {{ ticket.city }}, {{ ticket.address }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if is_active %}
+<script>
+    // === Tabs ===
+    function switchTab(tab) {
+        document.querySelectorAll('.qr-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.qr-tab-content').forEach(c => c.classList.remove('active'));
+        document.querySelector(`.qr-tab[onclick="switchTab('${tab}')"]`).classList.add('active');
+        document.getElementById('tab-' + tab).classList.add('active');
+    }
+
+    // === Copy single value ===
+    function copyText(btn, text) {
+        navigator.clipboard.writeText(text).then(() => {
+            btn.classList.add('copied');
+            btn.innerHTML = '<i class="fas fa-check"></i>';
+            setTimeout(() => {
+                btn.classList.remove('copied');
+                btn.innerHTML = '<i class="fas fa-copy"></i>';
+            }, 1500);
+        });
+    }
+
+    // === Copy all details ===
+    function copyAll(btn) {
+        const name = '{{ recipient.name }}';
+        const account = '{{ recipient.account }}';
+        const bank = '{{ recipient.bank }}';
+        const bic = '{{ recipient.bic }}';
+        const corr = '{{ recipient.corr_account }}';
+        const inn = '{{ recipient.inn }}';
+        const kpp = '{{ recipient.kpp }}';
+        const amount = '{{ payment.amount }}';
+        const purpose = 'Перевод средств по договору № {{ recipient.contract }} {{ recipient.name }} НДС не облагается';
+
+        const text = `Получатель: ${name}\nСчёт: ${account}\nБанк: ${bank}\nБИК: ${bic}\nКорр. счёт: ${corr}\nИНН: ${inn}\nКПП: ${kpp}\nСумма: ${amount} руб.\nНазначение: ${purpose}`;
+
+        navigator.clipboard.writeText(text).then(() => {
+            btn.classList.add('copied');
+            btn.innerHTML = '<i class="fas fa-check"></i> Скопировано!';
+            setTimeout(() => {
+                btn.classList.remove('copied');
+                btn.innerHTML = '<i class="fas fa-clipboard-list"></i> Скопировать все реквизиты';
+            }, 2000);
+        });
+    }
+
+    // === Timer ===
+    (function() {
+        const expiresAt = new Date('{{ payment.expires_at|date:"c" }}');
+        const timerText = document.getElementById('timerText');
+
+        function updateTimer() {
+            const now = new Date();
+            const diff = expiresAt - now;
+
+            if (diff <= 0) {
+                timerText.innerHTML = '<span class="timer-danger">Срок оплаты истёк</span>';
+                return;
+            }
+
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            timerText.textContent = `Ожидаем оплату: ${hours} ч. ${minutes} мин. ${seconds} сек.`;
+
+            if (hours < 1) {
+                timerText.classList.add('timer-danger');
+            }
+
+            setTimeout(updateTimer, 1000);
+        }
+
+        updateTimer();
+    })();
+</script>
+{% endif %}
+{% endblock %}

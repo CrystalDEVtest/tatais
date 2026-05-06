@@ -1,0 +1,561 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Подача заявки — ТатАИСнефть{% endblock %}
+
+{% block extra_css %}
+<style>
+    .create-ticket-card {
+        background: white;
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+    }
+
+    .create-ticket-header {
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        color: white;
+        padding: 2rem;
+        text-align: center;
+    }
+
+    .create-ticket-header i {
+        font-size: 2.5rem;
+        margin-bottom: 0.8rem;
+        opacity: 0.9;
+    }
+
+    .create-ticket-header h2 {
+        font-weight: 800;
+        margin-bottom: 0.3rem;
+    }
+
+    .create-ticket-header p {
+        opacity: 0.9;
+        margin: 0;
+    }
+
+    .create-ticket-body {
+        padding: 2rem;
+    }
+
+    .form-step-title {
+        font-weight: 700;
+        font-size: 1rem;
+        color: var(--primary);
+        margin-bottom: 1rem;
+        padding-bottom: 0.6rem;
+        border-bottom: 2px solid rgba(0, 152, 70, 0.12);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .form-step-title i {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: rgba(0, 152, 70, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.85rem;
+    }
+
+    .file-upload-area {
+        border: 2px dashed #ddd;
+        border-radius: var(--radius-sm);
+        padding: 2rem;
+        text-align: center;
+        transition: var(--transition);
+        cursor: pointer;
+        background: #fafafa;
+    }
+
+    .file-upload-area:hover,
+    .file-upload-area.dragover {
+        border-color: var(--primary);
+        background: rgba(0, 152, 70, 0.03);
+    }
+
+    .file-upload-area i {
+        font-size: 2.5rem;
+        color: #ccc;
+        margin-bottom: 0.8rem;
+    }
+
+    .file-upload-area p {
+        color: var(--gray);
+        margin: 0;
+        font-size: 0.9rem;
+    }
+
+    .file-upload-area small {
+        color: #aaa;
+        font-size: 0.78rem;
+    }
+
+    .uploaded-files {
+        margin-top: 1rem;
+    }
+
+    .uploaded-file-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.5rem 0.8rem;
+        background: #f8f9fa;
+        border-radius: 8px;
+        margin-bottom: 0.4rem;
+        font-size: 0.85rem;
+    }
+
+    .uploaded-file-item .remove-file {
+        color: #dc3545;
+        cursor: pointer;
+        padding: 0.2rem;
+        border: none;
+        background: none;
+        transition: var(--transition);
+    }
+
+    .uploaded-file-item .remove-file:hover {
+        color: #a71d2a;
+    }
+
+    .service-type-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 0.5rem;
+    }
+
+    .service-type-option {
+        position: relative;
+    }
+
+    .service-type-option input {
+        position: absolute;
+        opacity: 0;
+    }
+
+    .service-type-option label {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 1rem 0.5rem;
+        border: 2px solid #e9ecef;
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        transition: var(--transition);
+        text-align: center;
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: var(--gray);
+        gap: 0.4rem;
+    }
+
+    .service-type-option label i {
+        font-size: 1.3rem;
+    }
+
+    .service-type-option input:checked + label {
+        border-color: var(--primary);
+        background: rgba(0, 152, 70, 0.05);
+        color: var(--primary);
+    }
+
+    .service-type-option label:hover {
+        border-color: var(--secondary);
+    }
+
+    .guest-info-alert {
+        background: linear-gradient(135deg, #fff3cd, #ffeeba);
+        border: 1px solid #ffc107;
+        border-radius: var(--radius-sm);
+        padding: 1rem 1.2rem;
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        margin-bottom: 1.5rem;
+    }
+
+    .guest-info-alert i {
+        color: #856404;
+        margin-top: 2px;
+    }
+
+    .guest-info-alert p {
+        margin: 0;
+        font-size: 0.88rem;
+        color: #856404;
+    }
+
+    .btn-submit {
+        padding: 0.85rem 2.5rem;
+        font-size: 1rem;
+        font-weight: 700;
+        border-radius: var(--radius-sm);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-xl-7">
+            <div class="create-ticket-card fade-in">
+                <div class="create-ticket-header">
+                    <i class="fas fa-paper-plane"></i>
+                    <h2>Подача заявки</h2>
+                    <p>Заполните форму, и мы оперативно решим ваш вопрос</p>
+                </div>
+
+                <div class="create-ticket-body">
+                    <form method="post" enctype="multipart/form-data" novalidate>
+                        {% csrf_token %}
+                        <input type="hidden" name="form_token" value="{% now 'U' %}">
+
+                        <!-- Guest Info Alert -->
+                        {% if not user.is_authenticated %}
+                        <div class="guest-info-alert">
+                            <i class="fas fa-info-circle fa-lg"></i>
+                            <p>Вы подаёте заявку как гость. Для отслеживания статуса и получения уведомлений
+                            <a href="{% url 'login' %}" class="fw-700" style="color: #856404; text-decoration: underline;">войдите</a>
+                            или <a href="{% url 'register' %}" class="fw-700" style="color: #856404; text-decoration: underline;">зарегистрируйтесь</a>.</p>
+                        </div>
+                        {% endif %}
+
+                        <!-- Step 1: Service Type -->
+                        <div class="form-step-title">
+                            <i class="fas fa-cog"></i> Тип услуги
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Категория услуги</label>
+                            {{ form.service_category }}
+                            {% if form.service_category.errors %}
+                                <div class="text-danger mt-1" style="font-size: 0.8rem;">{% for err in form.service_category.errors %}{{ err }}{% endfor %}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">Тип услуги</label>
+                            <div class="service-type-grid">
+                                <div class="service-type-option">
+                                    <input type="radio" name="service_type" id="st_internet" value="internet" required
+                                           {% if form.service_type.value == 'internet' %}checked{% endif %}>
+                                    <label for="st_internet">
+                                        <i class="fas fa-wifi"></i>
+                                        Интернет
+                                    </label>
+                                </div>
+                                <div class="service-type-option">
+                                    <input type="radio" name="service_type" id="st_tv" value="tv"
+                                           {% if form.service_type.value == 'tv' %}checked{% endif %}>
+                                    <label for="st_tv">
+                                        <i class="fas fa-tv"></i>
+                                        ТВ
+                                    </label>
+                                </div>
+                                <div class="service-type-option">
+                                    <input type="radio" name="service_type" id="st_phone" value="phone"
+                                           {% if form.service_type.value == 'phone' %}checked{% endif %}>
+                                    <label for="st_phone">
+                                        <i class="fas fa-phone-alt"></i>
+                                        Телефония
+                                    </label>
+                                </div>
+                                <div class="service-type-option">
+                                    <input type="radio" name="service_type" id="st_int_tv" value="iptv"
+                                           {% if form.service_type.value == 'iptv' %}checked{% endif %}>
+                                    <label for="st_int_tv">
+                                        <i class="fas fa-wifi"></i>
+                                        Интернет+ТВ
+                                    </label>
+                                </div>
+                                <div class="service-type-option">
+                                    <input type="radio" name="service_type" id="st_int_phone" value="internet_phone"
+                                           {% if form.service_type.value == 'internet_phone' %}checked{% endif %}>
+                                    <label for="st_int_phone">
+                                        <i class="fas fa-wifi"></i>
+                                        Интернет+Телефон
+                                    </label>
+                                </div>
+                                <div class="service-type-option">
+                                    <input type="radio" name="service_type" id="st_all" value="triple"
+                                           {% if form.service_type.value == 'triple' %}checked{% endif %}>
+                                    <label for="st_all">
+                                        <i class="fas fa-layer-group"></i>
+                                        Всё вместе
+                                    </label>
+                                </div>
+                                <div class="service-type-option">
+                                    <input type="radio" name="service_type" id="st_other" value="other"
+                                           {% if form.service_type.value == 'other' %}checked{% endif %}>
+                                    <label for="st_other">
+                                        <i class="fas fa-ellipsis-h"></i>
+                                        Другое
+                                    </label>
+                                </div>
+                            </div>
+                            {% if form.service_type.errors %}
+                                <div class="text-danger mt-1" style="font-size: 0.8rem;">{% for err in form.service_type.errors %}{{ err }}{% endfor %}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Step 2: Description -->
+                        <div class="form-step-title">
+                            <i class="fas fa-edit"></i> Описание проблемы
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_description" class="form-label">Подробное описание <span class="text-danger">*</span></label>
+                            <textarea name="description" id="id_description" class="form-control" rows="4"
+                                      placeholder="Опишите проблему максимально подробно: что произошло, когда началось, что вы уже пробовали сделать..."
+                                      required>{{ form.description.value|default:'' }}</textarea>
+                            {% if form.description.errors %}
+                                <div class="text-danger mt-1" style="font-size: 0.8rem;">{% for err in form.description.errors %}{{ err }}{% endfor %}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Step 3: Address -->
+                        <div class="form-step-title">
+                            <i class="fas fa-map-marker-alt"></i> Адрес
+                        </div>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-5">
+                                <label for="id_city" class="form-label">Город <span class="text-danger">*</span></label>
+                                <select name="city" id="id_city" class="form-select" required>
+                                    <option value="" disabled selected>Выберите город</option>
+                                    <option value="Альметьевск" {% if form.city.value == 'Альметьевск' %}selected{% endif %}>Альметьевск</option>
+                                    <option value="Бугульма" {% if form.city.value == 'Бугульма' %}selected{% endif %}>Бугульма</option>
+                                    <option value="Лениногорск" {% if form.city.value == 'Лениногорск' %}selected{% endif %}>Лениногорск</option>
+                                    <option value="Чистополь" {% if form.city.value == 'Чистополь' %}selected{% endif %}>Чистополь</option>
+                                    <option value="Нурлат" {% if form.city.value == 'Нурлат' %}selected{% endif %}>Нурлат</option>
+                                    <option value="Азнакаево" {% if form.city.value == 'Азнакаево' %}selected{% endif %}>Азнакаево</option>
+                                    <option value="Бавлы" {% if form.city.value == 'Бавлы' %}selected{% endif %}>Бавлы</option>
+                                    <option value="Заинск" {% if form.city.value == 'Заинск' %}selected{% endif %}>Заинск</option>
+                                    <option value="Менделеевск" {% if form.city.value == 'Менделеевск' %}selected{% endif %}>Менделеевск</option>
+                                    <option value="Другой" {% if form.city.value == 'Другой' %}selected{% endif %}>Другой</option>
+                                </select>
+                                {% if form.city.errors %}
+                                    <div class="text-danger mt-1" style="font-size: 0.8rem;">{% for err in form.city.errors %}{{ err }}{% endfor %}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-7">
+                                <label for="id_address" class="form-label">Полный адрес <span class="text-danger">*</span></label>
+                                <input type="text" name="address" id="id_address" class="form-control"
+                                       placeholder="ул. Ленина, д. 10, кв. 5"
+                                       value="{{ form.address.value|default:'' }}" required>
+                                {% if form.address.errors %}
+                                    <div class="text-danger mt-1" style="font-size: 0.8rem;">{% for err in form.address.errors %}{{ err }}{% endfor %}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Guest Fields -->
+                        {% if not user.is_authenticated %}
+                        <div class="form-step-title">
+                            <i class="fas fa-user"></i> Ваши данные
+                        </div>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label for="id_guest_name" class="form-label">Имя <span class="text-danger">*</span></label>
+                                <input type="text" name="guest_name" id="id_guest_name" class="form-control"
+                                       placeholder="Иван Иванов" value="{{ form.guest_name.value|default:'' }}" required>
+                                {% if form.guest_name.errors %}
+                                    <div class="text-danger mt-1" style="font-size: 0.8rem;">{% for err in form.guest_name.errors %}{{ err }}{% endfor %}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="id_guest_phone" class="form-label">Телефон <span class="text-danger">*</span></label>
+                                <input type="tel" name="guest_phone" id="id_guest_phone" class="form-control"
+                                       placeholder="+7 (999) 123-45-67"
+                                       value="{{ form.guest_phone.value|default:'' }}" required>
+                                {% if form.guest_phone.errors %}
+                                    <div class="text-danger mt-1" style="font-size: 0.8rem;">{% for err in form.guest_phone.errors %}{{ err }}{% endfor %}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-12">
+                                <label for="id_guest_email" class="form-label">Email</label>
+                                <input type="email" name="guest_email" id="id_guest_email" class="form-control"
+                                       placeholder="email@example.com"
+                                       value="{{ form.guest_email.value|default:'' }}">
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Step 4: Attachments -->
+                        <div class="form-step-title">
+                            <i class="fas fa-paperclip"></i> Прикрепить файлы
+                        </div>
+
+                        <div class="file-upload-area" id="fileDropArea">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <p>Перетащите файлы сюда или нажмите для выбора</p>
+                            <small>Допустимые форматы: JPG, PNG, PDF (макс. 10 МБ)</small>
+                            <input type="file" name="attachments" id="fileInput" multiple
+                                   accept=".jpg,.jpeg,.png,.pdf" class="d-none">
+                        </div>
+
+                        <div class="uploaded-files" id="uploadedFiles"></div>
+
+                                                <!-- Step 5: Price -->
+                                                <div class="form-step-title">
+                                                    <i class="fas fa-ruble-sign"></i> Стоимость услуги
+                                                </div>
+                        
+                                                <div class="row g-3 mb-4">
+                                                    <div class="col-md-6">
+                                                        <label for="id_price" class="form-label">Стоимость подключения</label>
+                                                        <input type="number" name="price" id="id_price" class="form-control" value="0" min="0" readonly
+                                                               style="font-size: 1.2rem; font-weight: 700; color: var(--primary);">
+                                                        <small class="text-muted">Стоимость рассчитывается автоматически по выбранному тарифу</small>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">Способ оплаты</label>
+                                                        <select name="payment_method" id="paymentMethod" class="form-select">
+                                                            <option value="none" selected>Выберите способ оплаты</option>
+                                                            <option value="online">Оплатить онлайн (QR-код)</option>
+                                                            <option value="onsite">Оплата на месте</option>
+                                                        </select>
+                                                        <small class="text-muted">Онлайн оплата доступна через любой банк</small>
+                                                    </div>
+                                                </div>
+                        
+                                                <!-- Online Payment Info (hidden by default) -->
+                                                <div id="onlinePaymentInfo" style="display:none;" class="mb-4">
+                                                    <div style="background: rgba(0,152,70,0.06); border: 1px solid rgba(0,152,70,0.2); border-radius: var(--radius-sm); padding: 1rem;">
+                                                        <p style="font-size: 0.88rem; margin-bottom: 0.5rem;"><i class="fas fa-info-circle me-1" style="color: var(--primary);"></i> <strong>Онлайн оплата:</strong></p>
+                                                        <ul style="font-size: 0.82rem; color: var(--gray); padding-left: 1.2rem; margin: 0;">
+                                                            <li>После создания заявки будет сгенерирован QR-код для оплаты</li>
+                                                            <li>Сканируйте QR-код через приложение любого банка</li>
+                                                            <li>После оплаты чек будет отправлен на ваш email</li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                        
+                                                <!-- Onsite Payment Info (hidden by default) -->
+                                                <div id="onsitePaymentInfo" style="display:none;" class="mb-4">
+                                                    <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: var(--radius-sm); padding: 1rem;">
+                                                        <p style="font-size: 0.88rem; margin: 0;"><i class="fas fa-exclamation-triangle me-1" style="color: #856404;"></i> <strong>Оплата на месте:</strong> Оплатите наличными или картой при визите инженера</p>
+                                                    </div>
+                                                </div>
+                        
+                                                <!-- Submit -->
+                                                <div class="text-center mt-4 pt-3 border-top">
+                                                    <button type="submit" id="submitBtn" class="btn btn-primary btn-submit">
+                                                        <i class="fas fa-paper-plane me-2"></i> Отправить заявку
+                                                    </button>
+                                                    <p class="text-muted mt-2" style="font-size: 0.82rem;">
+                                                        Нажимая кнопку, вы соглашаетесь с
+                                                        <a href="https://tatais.ru/files/pd.pdf" target="_blank" style="color: var(--primary);">условиями обработки персональных данных</a>
+                                                    </p>
+                                                </div>
+                                            </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // File Upload
+    const dropArea = document.getElementById('fileDropArea');
+    const fileInput = document.getElementById('fileInput');
+    const uploadedFiles = document.getElementById('uploadedFiles');
+
+    if (dropArea && fileInput) {
+        dropArea.addEventListener('click', () => fileInput.click());
+
+        dropArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropArea.classList.add('dragover');
+        });
+
+        dropArea.addEventListener('dragleave', () => {
+            dropArea.classList.remove('dragover');
+        });
+
+        dropArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropArea.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        });
+
+        fileInput.addEventListener('change', () => {
+            handleFiles(fileInput.files);
+        });
+    }
+
+    function handleFiles(files) {
+        Array.from(files).forEach(file => {
+            const sizeMB = (file.size / 1024 / 1024).toFixed(2);
+            const ext = file.name.split('.').pop().toLowerCase();
+            const icon = ext === 'pdf' ? 'fa-file-pdf text-danger' : 'fa-file-image text-primary';
+
+            const div = document.createElement('div');
+            div.className = 'uploaded-file-item';
+            div.innerHTML = `
+                <span><i class="fas ${icon} me-2"></i>${file.name} <small class="text-muted">(${sizeMB} МБ)</small></span>
+                <button type="button" class="remove-file" onclick="this.parentElement.remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            uploadedFiles.appendChild(div);
+        });
+    }
+
+        // Price calculation based on service type
+        const prices = {
+            'internet': 474,
+            'tv': 300,
+            'phone': 200,
+            'iptv': 632,
+            'internet_phone': 682,
+            'triple': 914,
+            'other': 0
+        };
+    
+        function updatePrice() {
+            const checked = document.querySelector('input[name="service_type"]:checked');
+            const priceInput = document.getElementById('id_price');
+            if (checked && prices[checked.value] !== undefined) {
+                priceInput.value = prices[checked.value];
+            } else {
+                priceInput.value = 0;
+            }
+        }
+    
+        document.querySelectorAll('input[name="service_type"]').forEach(function(radio) {
+            radio.addEventListener('change', updatePrice);
+        });
+        updatePrice();
+    
+        // Payment method toggle
+        const pmSelect = document.getElementById('paymentMethod');
+        const onlineInfo = document.getElementById('onlinePaymentInfo');
+        const onsiteInfo = document.getElementById('onsitePaymentInfo');
+    
+        if (pmSelect) {
+            pmSelect.addEventListener('change', function() {
+                onlineInfo.style.display = this.value === 'online' ? 'block' : 'none';
+                onsiteInfo.style.display = this.value === 'onsite' ? 'block' : 'none';
+            });
+        }
+
+            // Защита от двойной отправки
+    var submitForm = document.querySelector('form');
+    var submitBtn = document.getElementById('submitBtn');
+    if (submitForm && submitBtn) {
+        submitForm.addEventListener('submit', function() {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Отправка...';
+        });
+    }
+</script>
+{% endblock %}

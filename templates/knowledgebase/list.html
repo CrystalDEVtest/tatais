@@ -1,0 +1,345 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}База знаний — ТатАИСнефть{% endblock %}
+
+{% block extra_css %}
+<style>
+    .kb-header {
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        border-radius: var(--radius);
+        padding: 1.8rem 2rem;
+        color: white;
+        margin-bottom: 1.5rem;
+    }
+
+    .kb-header h2 {
+        font-weight: 800;
+        margin-bottom: 0.3rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .kb-header p {
+        opacity: 0.9;
+        margin: 0;
+    }
+
+    .search-section {
+        background: white;
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .search-input-group {
+        position: relative;
+    }
+
+    .search-input-group .form-control {
+        padding-left: 3rem;
+        font-size: 1rem;
+        border-radius: var(--radius-sm);
+    }
+
+    .search-input-group .search-icon {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #ccc;
+        font-size: 1.1rem;
+    }
+
+    .sidebar-card {
+        background: white;
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+    }
+
+    .sidebar-card-header {
+        padding: 1rem 1.2rem;
+        border-bottom: 1px solid #f0f0f0;
+        font-weight: 700;
+        font-size: 0.92rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .sidebar-card-header i {
+        color: var(--primary);
+    }
+
+    .category-list {
+        list-style: none;
+        padding: 0.5rem 0;
+        margin: 0;
+    }
+
+    .category-list li a {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.7rem 1.2rem;
+        text-decoration: none;
+        color: #555;
+        font-size: 0.88rem;
+        transition: var(--transition);
+        border-left: 3px solid transparent;
+    }
+
+    .category-list li a:hover,
+    .category-list li a.active {
+        background: rgba(0, 152, 70, 0.05);
+        color: var(--primary);
+        border-left-color: var(--primary);
+    }
+
+    .category-list li a .count {
+        background: #f0f0f0;
+        color: var(--gray);
+        padding: 0.1rem 0.5rem;
+        border-radius: 10px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .category-list li a:hover .count,
+    .category-list li a.active .count {
+        background: rgba(0, 152, 70, 0.1);
+        color: var(--primary);
+    }
+
+    .article-card {
+        background: white;
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+        transition: var(--transition);
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .article-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-hover);
+    }
+
+    .article-card-body {
+        padding: 1.5rem;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .article-card-body .category-badge {
+        display: inline-block;
+        background: rgba(0, 152, 70, 0.08);
+        color: var(--primary);
+        padding: 0.2rem 0.7rem;
+        border-radius: 20px;
+        font-size: 0.72rem;
+        font-weight: 600;
+        margin-bottom: 0.8rem;
+    }
+
+    .article-card-body h5 {
+        font-weight: 700;
+        font-size: 1.05rem;
+        color: var(--dark);
+        margin-bottom: 0.6rem;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .article-card-body h5 a {
+        color: inherit;
+        text-decoration: none;
+        transition: var(--transition);
+    }
+
+    .article-card-body h5 a:hover {
+        color: var(--primary);
+    }
+
+    .article-card-body .preview {
+        color: var(--gray);
+        font-size: 0.85rem;
+        line-height: 1.6;
+        margin-bottom: 1rem;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        flex: 1;
+    }
+
+    .article-card-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-top: 1rem;
+        border-top: 1px solid #f0f0f0;
+        font-size: 0.78rem;
+        color: #aaa;
+    }
+
+    .article-card-footer .author {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .article-card-footer .author-avatar {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.6rem;
+        font-weight: 700;
+    }
+
+    .article-card-footer .views {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header -->
+    <div class="kb-header fade-in">
+        <h2><i class="fas fa-book"></i> База знаний</h2>
+        <p>Полезные статьи, инструкции и ответы на частые вопросы</p>
+    </div>
+
+    <!-- Search -->
+    <div class="search-section fade-in">
+        <form method="get" action="{% url 'kb_list' %}">
+            <div class="search-input-group">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" name="search" class="form-control"
+                       placeholder="Найти статью..." value="{{ search_query|default:'' }}">
+            </div>
+        </form>
+    </div>
+
+    <div class="row g-4">
+        <!-- Sidebar -->
+        <div class="col-lg-3">
+            <div class="sidebar-card slide-up" style="position: sticky; top: 90px;">
+                <div class="sidebar-card-header">
+                    <i class="fas fa-folder-open"></i> Категории
+                </div>
+                <ul class="category-list">
+                    <li>
+                        <a href="{% url 'kb_list' %}" class="{% if not category %}active{% endif %}">
+                            <span><i class="fas fa-th-large me-2"></i>Все статьи</span>
+                            <span class="count">{{ total_count|default:'0' }}</span>
+                        </a>
+                    </li>
+                    {% for cat in categories %}
+                    <li>
+                        <a href="?category={{ cat.slug }}" class="{% if category == cat.slug %}active{% endif %}">
+                            <span><i class="fas fa-tag me-2"></i>{{ cat.name }}</span>
+                            <span class="count">{{ cat.article_count }}</span>
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+        <!-- Articles Grid -->
+        <div class="col-lg-9">
+            {% if search_query %}
+            <div class="mb-3 fade-in">
+                <p class="text-muted" style="font-size: 0.9rem;">
+                    <i class="fas fa-search me-1"></i> Результаты поиска: «{{ search }}»
+                    — {{ articles|length }} статей
+                </p>
+            </div>
+            {% endif %}
+
+            {% if articles %}
+            <div class="row g-4">
+                {% for article in articles %}
+                <div class="col-md-6 fade-in">
+                    <div class="article-card">
+                        <div class="article-card-body">
+                            <span class="category-badge">{{ article.category.name }}</span>
+                            <h5><a href="{% url 'kb_detail' article.id %}">{{ article.title }}</a></h5>
+                            <p class="preview">{{ article.preview|default:article.content|striptags|truncatewords:30 }}</p>
+                            <div class="article-card-footer">
+                                <div class="author">
+                                    <div class="author-avatar">
+                                        {{ article.author.first_name.0 }}{{ article.author.last_name.0 }}
+                                    </div>
+                                    <span>{{ article.author.get_full_name }}</span>
+                                </div>
+                                <div class="d-flex gap-3">
+                                    <span class="views">
+                                        <i class="fas fa-eye"></i> {{ article.views_count }}
+                                    </span>
+                                    <span>
+                                        <i class="fas fa-calendar"></i> {{ article.created_at|date:"d.m.Y" }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Pagination -->
+            {% if articles.has_next or articles.has_previous %}
+            <nav class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if articles.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ articles.previous_page_number }}">
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                    {% for num in articles.paginator.page_range %}
+                    <li class="page-item {% if articles.number == num %}active{% endif %}">
+                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                    </li>
+                    {% endfor %}
+                    {% if articles.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ articles.next_page_number }}">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+
+            {% else %}
+            <div class="text-center py-5 fade-in" style="background: white; border-radius: var(--radius); box-shadow: var(--shadow);">
+                <i class="fas fa-search fa-3x text-muted mb-3 d-block"></i>
+                <h5 style="color: var(--gray); font-weight: 700;">Статьи не найдены</h5>
+                <p class="text-muted">Попробуйте изменить параметры поиска</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

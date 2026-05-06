@@ -1,0 +1,573 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Отчёты и аналитика — ТатАИСнефть{% endblock %}
+
+{% block extra_css %}
+<style>
+    .reports-header {
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        border-radius: var(--radius);
+        padding: 1.8rem 2rem;
+        color: white;
+        margin-bottom: 1.5rem;
+    }
+
+    .reports-header h2 {
+        font-weight: 800;
+        margin-bottom: 0.3rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .reports-header p {
+        opacity: 0.9;
+        margin: 0;
+    }
+
+    .date-range-selector {
+        background: white;
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 1rem 1.5rem;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .date-range-selector .btn-range {
+        padding: 0.4rem 1rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        border: 2px solid #e9ecef;
+        background: transparent;
+        color: var(--gray);
+        transition: var(--transition);
+    }
+
+    .date-range-selector .btn-range:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+    }
+
+    .date-range-selector .btn-range.active {
+        background: var(--primary);
+        border-color: var(--primary);
+        color: white;
+    }
+
+    .stats-row .stat-card {
+        background: white;
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 1.3rem;
+        transition: var(--transition);
+        height: 100%;
+        text-align: center;
+    }
+
+    .stats-row .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-hover);
+    }
+
+    .stats-row .stat-card-icon {
+        width: 45px;
+        height: 45px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        margin: 0 auto 0.8rem;
+    }
+
+    .stats-row .stat-card h3 {
+        font-weight: 800;
+        font-size: 1.8rem;
+        color: var(--dark);
+        margin-bottom: 0.15rem;
+    }
+
+    .stats-row .stat-card p {
+        color: var(--gray);
+        font-size: 0.82rem;
+        margin: 0;
+    }
+
+    .chart-card {
+        background: white;
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+        height: 100%;
+    }
+
+    .chart-card-header {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid #f0f0f0;
+        font-weight: 700;
+        font-size: 0.95rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .chart-card-header i {
+        color: var(--primary);
+    }
+
+    .chart-card-body {
+        padding: 1.5rem;
+    }
+
+    .chart-card-body canvas {
+        max-height: 300px;
+    }
+
+    .workload-table {
+        width: 100%;
+    }
+
+    .workload-table thead {
+        background: #f8f9fa;
+    }
+
+    .workload-table th {
+        font-weight: 700;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--gray);
+        padding: 0.8rem 1rem;
+    }
+
+    .workload-table td {
+        padding: 0.8rem 1rem;
+        font-size: 0.88rem;
+        vertical-align: middle;
+        border-bottom: 1px solid #f5f5f5;
+    }
+
+    .workload-table .progress {
+        height: 6px;
+        border-radius: 3px;
+        background: #e9ecef;
+    }
+
+    .workload-table .progress-bar {
+        background: linear-gradient(90deg, var(--primary), var(--secondary));
+    }
+
+    .recent-tickets-table td {
+        padding: 0.7rem 1rem;
+        font-size: 0.85rem;
+    }
+
+    .recent-tickets-table .ticket-link {
+        color: var(--primary);
+        font-weight: 700;
+        text-decoration: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 py-4">
+    <!-- Header -->
+    <div class="reports-header fade-in">
+        <h2><i class="fas fa-chart-bar"></i> Отчёты и аналитика</h2>
+        <p>Обзор деятельности и ключевые показатели</p>
+    </div>
+
+    <!-- Export Buttons -->
+      <!-- Кнопки экспорта -->
+      <div class="d-flex gap-2 flex-wrap fade-in mb-4">
+        <a href="{% url 'reports_export_excel' %}?days={{ days }}" class="btn btn-outline-primary btn-sm">
+            <i class="fas fa-file-excel me-1" style="color:#28a745;"></i> Скачать Excel
+        </a>
+        <a href="{% url 'reports_export_csv' %}?days={{ days }}" class="btn btn-outline-primary btn-sm">
+            <i class="fas fa-file-csv me-1" style="color:#007bff;"></i> Скачать CSV
+        </a>
+        <a href="{% url 'reports_export_word' %}?days={{ days }}" class="btn btn-outline-primary btn-sm">
+            <i class="fas fa-file-word me-1" style="color:#2b5797;"></i> Скачать Word
+        </a>
+    </div>
+
+    <!-- Date Range Selector -->
+    <div class="date-range-selector fade-in">
+        <div class="d-flex align-items-center gap-2">
+            <i class="fas fa-calendar-alt text-muted"></i>
+            <span class="fw-600" style="font-size: 0.88rem;">Период:</span>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="?days=7" class="btn btn-range {% if days == 7 %}active{% endif %}">7 дней</a>
+            <a href="?days=30" class="btn btn-range {% if days == 30 or not days %}active{% endif %}">30 дней</a>
+            <a href="?days=90" class="btn btn-range {% if days == 90 %}active{% endif %}">90 дней</a>
+        </div>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="row g-3 mb-4 stats-row">
+        <div class="col-lg col-md-4 col-6 slide-up">
+            <div class="stat-card">
+                <div class="stat-card-icon" style="background: rgba(0, 152, 70, 0.1); color: var(--primary);">
+                    <i class="fas fa-ticket-alt"></i>
+                </div>
+                <h3>{{ total_tickets }}</h3>
+                <p>Всего заявок</p>
+            </div>
+        </div>
+        <div class="col-lg col-md-4 col-6 slide-up">
+            <div class="stat-card">
+                <div class="stat-card-icon" style="background: rgba(40, 167, 69, 0.1); color: #28a745;">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h3>{{ completed_tickets }}</h3>
+                <p>Выполнено</p>
+            </div>
+        </div>
+        <div class="col-lg col-md-4 col-6 slide-up">
+            <div class="stat-card">
+                <div class="stat-card-icon" style="background: rgba(255, 193, 7, 0.1); color: #ffc107;">
+                    <i class="fas fa-spinner"></i>
+                </div>
+                <h3>{{ in_progress_tickets }}</h3>
+                <p>В работе</p>
+            </div>
+        </div>
+        <div class="col-lg col-md-4 col-6 slide-up">
+            <div class="stat-card">
+                <div class="stat-card-icon" style="background: rgba(0, 123, 255, 0.1); color: #007bff;">
+                    <i class="fas fa-percentage"></i>
+                </div>
+                <h3>{{ completion_rate }}%</h3>
+                <p>Выполнение</p>
+            </div>
+        </div>
+        <div class="col-lg col-md-4 col-6 slide-up">
+            <div class="stat-card">
+                <div class="stat-card-icon" style="background: rgba(255, 193, 7, 0.1); color: #ffc107;">
+                    <i class="fas fa-star"></i>
+                </div>
+                <h3>{{ avg_rating|default:"—" }}</h3>
+                <p>Ср. оценка</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row 1 -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-8 fade-in">
+            <div class="chart-card">
+                <div class="chart-card-header">
+                    <i class="fas fa-chart-line"></i> Динамика заявок (по дням)
+                </div>
+                <div class="chart-card-body">
+                    <canvas id="dailyChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 fade-in">
+            <div class="chart-card">
+                <div class="chart-card-header">
+                    <i class="fas fa-chart-pie"></i> Заявки по статусам
+                </div>
+                <div class="chart-card-body">
+                    <canvas id="statusChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row 2 -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-6 fade-in">
+            <div class="chart-card">
+                <div class="chart-card-header">
+                    <i class="fas fa-cogs"></i> Заявки по типам услуг
+                </div>
+                <div class="chart-card-body">
+                    <canvas id="serviceChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6 fade-in">
+            <div class="chart-card">
+                <div class="chart-card-header">
+                    <i class="fas fa-city"></i> Заявки по городам
+                </div>
+                <div class="chart-card-body">
+                    <canvas id="cityChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Engineer Workload Table -->
+    {% if engineer_workload %}
+    <div class="row g-4 mb-4">
+        <div class="col-lg-6 fade-in">
+            <div class="chart-card">
+                <div class="chart-card-header">
+                    <i class="fas fa-users-cog"></i> Нагрузка инженеров
+                </div>
+                <div class="table-responsive">
+                    <table class="workload-table">
+                        <thead>
+                            <tr>
+                                <th>Инженер</th>
+                                <th>Активных</th>
+                                <th>Выполнено</th>
+                                <th>Нагрузка</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for eng in engineer_workload %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--secondary));color:white;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;">
+                                            {{ eng.first_name.0 }}{{ eng.last_name.0 }}
+                                        </div>
+                                        <span class="fw-600">{{ eng.get_full_name }}</span>
+                                    </div>
+                                </td>
+                                <td><span class="badge bg-warning text-dark">{{ eng.active_count }}</span></td>
+                                <td><span class="badge bg-success">{{ eng.completed_count }}</span></td>
+                                <td style="min-width: 120px;">
+                                    <div class="progress">
+                                        <div class="progress-bar" style="width: {{ eng.load_percent|default:0 }}%"></div>
+                                    </div>
+                                    <small class="text-muted">{{ eng.load_percent|default:0 }}%</small>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Tickets -->
+        <div class="col-lg-6 fade-in">
+            <div class="chart-card">
+                <div class="chart-card-header">
+                    <i class="fas fa-list-alt"></i> Последние заявки
+                </div>
+                <div class="table-responsive">
+                    <table class="workload-table recent-tickets-table">
+                        <thead>
+                            <tr>
+                                <th>№</th>
+                                <th>Тип</th>
+                                <th>Город</th>
+                                <th>Статус</th>
+                                <th>Дата</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ticket in recent_tickets %}
+                            <tr>
+                                <td><a href="{% url 'ticket_detail' ticket.id %}" class="ticket-link">#{{ ticket.ticket_number }}</a></td>
+                                <td>{{ ticket.get_service_type_display }}</td>
+                                <td>{{ ticket.city }}</td>
+                                <td><span class="status-badge status-{{ ticket.status }}">{{ ticket.get_status_display }}</span></td>
+                                <td style="font-size: 0.8rem; color: var(--gray);">{{ ticket.created_at|date:"d.m.Y" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+    // ===== Chart Colors =====
+    const chartColors = {
+        primary: '#009846',
+        secondary: '#00b353',
+        blue: '#007bff',
+        cyan: '#17a2b8',
+        yellow: '#ffc107',
+        orange: '#fd7e14',
+        red: '#dc3545',
+        purple: '#6f42c1',
+        gray: '#6c757d',
+        green: '#28a745'
+    };
+
+    const fontFamily = "'Montserrat', sans-serif";
+
+    // ===== Daily Tickets Chart =====
+    const dailyCtx = document.getElementById('dailyChart');
+    if (dailyCtx) {
+        new Chart(dailyCtx, {
+            type: 'line',
+            data: {
+                labels: {{ daily_labels|safe|default:"[]" }},
+                datasets: [{
+                    label: 'Заявки',
+                    data: {{ daily_values|safe|default:"[]" }},
+                    borderColor: chartColors.primary,
+                    backgroundColor: 'rgba(0, 152, 70, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: chartColors.primary,
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { font: { family: fontFamily, size: 11 } },
+                        grid: { color: '#f0f0f0' }
+                    },
+                    x: {
+                        ticks: { font: { family: fontFamily, size: 11 }, maxRotation: 45 },
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    }
+
+    // ===== Status Chart =====
+    const statusCtx = document.getElementById('statusChart');
+    if (statusCtx) {
+        new Chart(statusCtx, {
+            type: 'doughnut',
+            data: {
+                labels: {{ status_labels|safe|default:"[]" }},
+                datasets: [{
+                    data: {{ status_values|safe|default:"[]" }},
+                    backgroundColor: [
+                        chartColors.blue, chartColors.cyan, chartColors.yellow,
+                        chartColors.gray, chartColors.purple, chartColors.green, chartColors.red
+                    ],
+                    borderWidth: 0,
+                    hoverOffset: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            font: { family: fontFamily, size: 11 },
+                            padding: 12,
+                            usePointStyle: true,
+                            pointStyle: 'circle'
+                        }
+                    }
+                },
+                cutout: '65%'
+            }
+        });
+    }
+
+    // ===== Service Type Chart =====
+    const serviceCtx = document.getElementById('serviceChart');
+    if (serviceCtx) {
+        new Chart(serviceCtx, {
+            type: 'bar',
+            data: {
+                labels: {{ service_labels|safe|default:"[]" }},
+                datasets: [{
+                    label: 'Заявки',
+                    data: {{ service_values|safe|default:"[]" }},
+                    backgroundColor: [
+                        'rgba(0, 152, 70, 0.8)',
+                        'rgba(0, 179, 83, 0.8)',
+                        'rgba(0, 123, 255, 0.8)',
+                        'rgba(255, 193, 7, 0.8)',
+                        'rgba(108, 117, 125, 0.8)',
+                        'rgba(111, 66, 193, 0.8)',
+                        'rgba(220, 53, 69, 0.8)'
+                    ],
+                    borderRadius: 8,
+                    borderSkipped: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { font: { family: fontFamily, size: 11 } },
+                        grid: { color: '#f0f0f0' }
+                    },
+                    x: {
+                        ticks: { font: { family: fontFamily, size: 11 } },
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    }
+
+    // ===== City Chart =====
+    const cityCtx = document.getElementById('cityChart');
+    if (cityCtx) {
+        new Chart(cityCtx, {
+            type: 'bar',
+            data: {
+                labels: {{ city_labels|safe|default:"[]" }},
+                datasets: [{
+                    label: 'Заявки',
+                    data: {{ city_values|safe|default:"[]" }},
+                    backgroundColor: 'rgba(0, 152, 70, 0.7)',
+                    borderColor: 'rgba(0, 152, 70, 1)',
+                    borderWidth: 1,
+                    borderRadius: 8,
+                    borderSkipped: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                indexAxis: 'y',
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        ticks: { font: { family: fontFamily, size: 11 } },
+                        grid: { color: '#f0f0f0' }
+                    },
+                    y: {
+                        ticks: { font: { family: fontFamily, size: 11 } },
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}

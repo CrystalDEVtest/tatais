@@ -1,0 +1,303 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Мой профиль — ТатАИСнефть{% endblock %}
+
+{% block extra_css %}
+<style>
+    .profile-header-card {
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        border-radius: var(--radius);
+    }
+
+    .profile-avatar {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.2);
+        border: 4px solid rgba(255, 255, 255, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        color: white;
+        font-weight: 800;
+    }
+
+    .profile-info {
+        color: white;
+    }
+
+    .profile-info h3 {
+        font-weight: 800;
+        margin-bottom: 0.2rem;
+    }
+
+    .profile-info .role-badge {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        padding: 0.3rem 0.8rem;
+        border-radius: 20px;
+        font-size: 0.78rem;
+        font-weight: 600;
+        display: inline-block;
+    }
+
+    .profile-info .profile-meta {
+        display: flex;
+        gap: 1.5rem;
+        flex-wrap: wrap;
+        margin-top: 0.8rem;
+        font-size: 0.88rem;
+        opacity: 0.9;
+    }
+
+    .profile-info .profile-meta i {
+        margin-right: 5px;
+    }
+
+    .info-card {
+        background: white;
+        border-radius: var(--radius);
+        padding: 1.5rem;
+        box-shadow: var(--shadow);
+    }
+
+    .info-card h5 {
+        font-weight: 700;
+        color: var(--dark);
+        margin-bottom: 1.2rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .info-card h5 i {
+        color: var(--primary);
+    }
+
+    .profile-field {
+        display: flex;
+        align-items: flex-start;
+        padding: 0.8rem 0;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .profile-field:last-child {
+        border-bottom: none;
+    }
+
+    .profile-field label {
+        font-weight: 600;
+        color: var(--gray);
+        font-size: 0.85rem;
+        min-width: 160px;
+    }
+
+    .profile-field span {
+        color: var(--dark);
+        font-size: 0.9rem;
+    }
+
+    .ticket-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem;
+        border-radius: var(--radius-sm);
+        background: #f8f9fa;
+        margin-bottom: 0.5rem;
+        transition: var(--transition);
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .ticket-row:hover {
+        background: white;
+        box-shadow: var(--shadow);
+        transform: translateX(5px);
+    }
+
+    .ticket-number {
+        font-weight: 700;
+        color: var(--primary);
+        font-size: 0.9rem;
+    }
+
+    .btn-edit-profile {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: var(--radius-sm);
+        padding: 0.4rem 1rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        transition: var(--transition);
+    }
+
+    .btn-edit-profile:hover {
+        background: white;
+        color: var(--primary);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Profile Header -->
+    <div class="profile-header-card p-4 mb-4 fade-in">
+        <div class="row align-items-center">
+            <div class="col-auto">
+                <div class="profile-avatar">
+                    {% if user.avatar %}
+                    <img src="{{ user.avatar.url }}" alt="Аватар" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+                    {% else %}
+                    {{ user.first_name.0 }}{{ user.last_name.0 }}
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col">
+                <div class="profile-info">
+                    <h3>{{ user.get_full_name|default:user.username }}</h3>
+                    <span class="role-badge">
+                        <i class="fas fa-user me-1"></i>
+                        {% if user.role == 'subscriber' %}Абонент
+                        {% elif user.role == 'engineer' %}Инженер
+                        {% elif user.role == 'dispatcher' %}Диспетчер
+                        {% elif user.is_staff %}Администратор
+                        {% else %}Пользователь{% endif %}
+                    </span>
+                    <div class="profile-meta">
+                        {% if user.email %}
+                        <span><i class="fas fa-envelope"></i> {{ user.email }}</span>
+                        {% endif %}
+                        {% if user.phone %}
+                        <span><i class="fas fa-phone"></i> {{ user.phone }}</span>
+                        {% endif %}
+                        {% if user.city %}
+                        <span><i class="fas fa-map-marker-alt"></i> {{ user.city }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-auto d-flex gap-2">
+                <a href="{% url 'change_password' %}" class="btn btn-edit-profile">
+                    <i class="fas fa-key me-1"></i> Сменить пароль
+                </a>
+                <a href="#edit-form" class="btn btn-edit-profile">
+                    <i class="fas fa-edit me-1"></i> Редактировать
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Profile Details -->
+        <div class="col-lg-4">
+            <div class="info-card slide-up">
+                <h5><i class="fas fa-id-card"></i> Данные профиля</h5>
+                <div class="profile-field">
+                    <label>Имя пользователя</label>
+                    <span>{{ user.username }}</span>
+                </div>
+                <div class="profile-field">
+                    <label>Email</label>
+                    <span>{{ user.email|default:'—' }}</span>
+                </div>
+                <div class="profile-field">
+                    <label>Имя</label>
+                    <span>{{ user.first_name|default:'—' }}</span>
+                </div>
+                <div class="profile-field">
+                    <label>Фамилия</label>
+                    <span>{{ user.last_name|default:'—' }}</span>
+                </div>
+                {% if user.patronymic %}
+                <div class="profile-field">
+                    <label>Отчество</label>
+                    <span>{{ user.patronymic }}</span>
+                </div>
+                {% endif %}
+                <div class="profile-field">
+                    <label>Телефон</label>
+                    <span>{{ user.phone|default:'—' }}</span>
+                </div>
+                <div class="profile-field">
+                    <label>Город</label>
+                    <span>{{ user.city|default:'—' }}</span>
+                </div>
+                <div class="profile-field">
+                    <label>Дата регистрации</label>
+                    <span>{{ user.date_joined|date:"d.m.Y" }}</span>
+                </div>
+            </div>
+
+            <!-- Edit Profile Form -->
+            <div id="edit-form" class="info-card slide-up mt-4">
+                <h5><i class="fas fa-edit"></i> Редактировать профиль</h5>
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    {% for field in form %}
+                    <div class="mb-3">
+                        <label class="form-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.errors %}
+                            <div class="text-danger mt-1" style="font-size: 0.8rem;">
+                                {% for err in field.errors %}{{ err }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                    <button type="submit" name="save_profile" class="btn btn-primary w-100">
+                        <i class="fas fa-save me-1"></i> Сохранить
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Tickets -->
+        <div class="col-lg-8">
+            <div class="info-card slide-up">
+                <h5><i class="fas fa-ticket-alt"></i> Мои заявки</h5>
+
+                {% if tickets %}
+                    {% for ticket in tickets %}
+                    <a href="{% url 'ticket_detail' ticket.id %}" class="ticket-row">
+                        <div>
+                            <div class="ticket-number">#{{ ticket.ticket_number }}</div>
+                            <div style="font-size: 0.85rem; color: var(--gray);">
+                                {{ ticket.get_service_type_display }} — {{ ticket.address|truncatewords:5 }}
+                            </div>
+                            <div style="font-size: 0.78rem; color: #aaa; margin-top: 2px;">
+                                <i class="fas fa-calendar me-1"></i> {{ ticket.created_at|date:"d.m.Y H:i" }}
+                            </div>
+                        </div>
+                        <div>
+                            <span class="status-badge status-{{ ticket.status }}">
+                                {{ ticket.get_status_display }}
+                            </span>
+                        </div>
+                    </a>
+                    {% endfor %}
+
+                    {% if tickets.has_next %}
+                    <div class="text-center mt-3">
+                        <a href="#" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-list me-1"></i> Все заявки
+                        </a>
+                    </div>
+                    {% endif %}
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">У вас пока нет заявок</p>
+                        <a href="{% url 'ticket_create' %}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-plus me-1"></i> Подать заявку
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

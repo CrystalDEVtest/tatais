@@ -1,0 +1,660 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Уведомления — ТатАИСнефть{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* === Header === */
+    .notif-page-header {
+        background: linear-gradient(135deg, #0d7a3e 0%, #009846 50%, #00b853 100%);
+        border-radius: 20px;
+        padding: 2rem 2.5rem;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 1rem;
+        color: white;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 8px 32px rgba(0, 152, 70, 0.25);
+    }
+
+    .notif-page-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -10%;
+        width: 300px;
+        height: 300px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 50%;
+    }
+
+    .notif-page-header::after {
+        content: '';
+        position: absolute;
+        bottom: -30%;
+        left: 20%;
+        width: 200px;
+        height: 200px;
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 50%;
+    }
+
+    .notif-header-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        z-index: 1;
+    }
+
+    .notif-header-icon {
+        width: 56px;
+        height: 56px;
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        backdrop-filter: blur(10px);
+    }
+
+    .notif-header-left h2 {
+        font-weight: 800;
+        margin: 0;
+        font-size: 1.6rem;
+        letter-spacing: -0.3px;
+    }
+
+    .notif-header-left p {
+        margin: 0;
+        opacity: 0.85;
+        font-size: 0.88rem;
+    }
+
+    .notif-header-badge {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        font-size: 0.78rem;
+        font-weight: 700;
+        padding: 0.35rem 1rem;
+        border-radius: 20px;
+        backdrop-filter: blur(10px);
+        z-index: 1;
+    }
+
+    .notif-header-actions {
+        display: flex;
+        gap: 0.5rem;
+        z-index: 1;
+    }
+
+    .btn-mark-all {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 12px;
+        padding: 0.55rem 1.2rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        backdrop-filter: blur(10px);
+        text-decoration: none;
+    }
+
+    .btn-mark-all:hover {
+        background: rgba(255, 255, 255, 0.3);
+        color: white;
+        transform: translateY(-1px);
+    }
+
+    /* === Filters === */
+    .notif-filters {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1.2rem;
+        flex-wrap: wrap;
+    }
+
+    .notif-filter-btn {
+        padding: 0.45rem 1rem;
+        border-radius: 10px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        background: white;
+        border: 1.5px solid #e9ecef;
+        color: #666;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .notif-filter-btn:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+    }
+
+    .notif-filter-btn.active {
+        background: var(--primary);
+        border-color: var(--primary);
+        color: white;
+    }
+
+    .notif-filter-btn .filter-count {
+        background: rgba(0, 0, 0, 0.1);
+        padding: 1px 7px;
+        border-radius: 8px;
+        font-size: 0.72rem;
+    }
+
+    .notif-filter-btn.active .filter-count {
+        background: rgba(255, 255, 255, 0.2);
+    }
+
+    /* === Notification Cards === */
+    .notification-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.6rem;
+    }
+
+    .notif-card {
+        background: white;
+        border-radius: 16px;
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 1.2rem 1.5rem;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        cursor: pointer;
+        text-decoration: none;
+        color: inherit;
+        position: relative;
+        overflow: hidden;
+        border: 1.5px solid transparent;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+    }
+
+    .notif-card:hover {
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+        transform: translateY(-2px);
+        border-color: #e9ecef;
+    }
+
+    .notif-card.unread {
+        background: linear-gradient(135deg, #f0fff4 0%, #ffffff 100%);
+        border-color: rgba(0, 152, 70, 0.15);
+    }
+
+    .notif-card.unread::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        background: linear-gradient(180deg, #009846, #00b853);
+        border-radius: 0 4px 4px 0;
+    }
+
+    .notif-card.read {
+        opacity: 0.75;
+    }
+
+    .notif-card.read:hover {
+        opacity: 1;
+    }
+
+    /* Icon */
+    .notif-card-icon {
+        width: 50px;
+        height: 50px;
+        min-width: 50px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.15rem;
+        position: relative;
+    }
+
+    .notif-card-icon.status_changed {
+        background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+        color: #1565c0;
+    }
+    .notif-card-icon.ticket_created {
+        background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+        color: #2e7d32;
+    }
+    .notif-card-icon.assigned {
+        background: linear-gradient(135deg, #e0f7fa, #b2ebf2);
+        color: #00838f;
+    }
+    .notif-card-icon.ticket_completed {
+        background: linear-gradient(135deg, #e8f5e9, #a5d6a7);
+        color: #1b5e20;
+    }
+    .notif-card-icon.comment_added {
+        background: linear-gradient(135deg, #f3e5f5, #e1bee7);
+        color: #7b1fa2;
+    }
+    .notif-card-icon.system {
+        background: linear-gradient(135deg, #fff8e1, #ffecb3);
+        color: #f57f17;
+    }
+    .notif-card-icon.payment {
+        background: linear-gradient(135deg, #fce4ec, #f8bbd0);
+        color: #c62828;
+    }
+    .notif-card-icon.default {
+        background: linear-gradient(135deg, #f5f5f5, #e0e0e0);
+        color: #616161;
+    }
+
+    /* Content */
+    .notif-card-body {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .notif-card-title {
+        font-weight: 700;
+        font-size: 0.92rem;
+        margin-bottom: 0.3rem;
+        color: var(--dark);
+        line-height: 1.4;
+    }
+
+    .notif-card-text {
+        font-size: 0.84rem;
+        color: #888;
+        margin-bottom: 0.5rem;
+        line-height: 1.55;
+    }
+
+    .notif-card-footer {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .notif-card-time {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.76rem;
+        color: #aaa;
+        font-weight: 500;
+    }
+
+    .notif-card-time i {
+        font-size: 0.7rem;
+    }
+
+    .notif-card-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        color: var(--primary);
+        text-decoration: none;
+        font-size: 0.8rem;
+        font-weight: 600;
+        padding: 0.2rem 0.7rem;
+        background: rgba(0, 152, 70, 0.06);
+        border-radius: 8px;
+        transition: all 0.2s;
+    }
+
+    .notif-card-link:hover {
+        background: rgba(0, 152, 70, 0.12);
+        text-decoration: none;
+        color: var(--primary);
+    }
+
+    /* Unread dot */
+    .notif-unread-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--primary);
+        flex-shrink: 0;
+        margin-top: 8px;
+        box-shadow: 0 0 0 3px rgba(0, 152, 70, 0.15);
+        animation: dot-pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes dot-pulse {
+        0%, 100% { box-shadow: 0 0 0 3px rgba(0, 152, 70, 0.15); }
+        50% { box-shadow: 0 0 0 6px rgba(0, 152, 70, 0.08); }
+    }
+
+    /* Type badge */
+    .notif-type-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        padding: 0.15rem 0.6rem;
+        border-radius: 6px;
+        font-size: 0.68rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    .notif-type-badge.status_changed { background: #e3f2fd; color: #1565c0; }
+    .notif-type-badge.ticket_created { background: #e8f5e9; color: #2e7d32; }
+    .notif-type-badge.assigned { background: #e0f7fa; color: #00838f; }
+    .notif-type-badge.ticket_completed { background: #e8f5e9; color: #1b5e20; }
+    .notif-type-badge.comment_added { background: #f3e5f5; color: #7b1fa2; }
+    .notif-type-badge.system { background: #fff8e1; color: #f57f17; }
+    .notif-type-badge.payment { background: #fce4ec; color: #c62828; }
+
+    /* Empty State */
+    .notif-empty {
+        text-align: center;
+        padding: 4rem 2rem;
+        background: white;
+        border-radius: 20px;
+        box-shadow: var(--shadow);
+    }
+
+    .notif-empty-icon {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #f5f5f5, #eeeeee);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1.5rem;
+    }
+
+    .notif-empty-icon i {
+        font-size: 2.5rem;
+        color: #ccc;
+    }
+
+    .notif-empty h4 {
+        font-weight: 800;
+        color: #444;
+        margin-bottom: 0.5rem;
+    }
+
+    .notif-empty p {
+        color: #aaa;
+        font-size: 0.92rem;
+    }
+
+    /* Pagination */
+    .notif-pagination {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
+        margin-top: 1.5rem;
+    }
+
+    .notif-page-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.85rem;
+        font-weight: 600;
+        border: 1.5px solid #e9ecef;
+        background: white;
+        color: #666;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: none;
+    }
+
+    .notif-page-btn:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+        text-decoration: none;
+    }
+
+    .notif-page-btn.active {
+        background: var(--primary);
+        border-color: var(--primary);
+        color: white;
+    }
+
+    .notif-page-btn.nav-arrow {
+        background: transparent;
+        border: 1.5px solid #e9ecef;
+    }
+
+    .notif-page-btn.nav-arrow:hover {
+        background: var(--primary);
+        color: white;
+    }
+
+    /* Fade in animation */
+    .notif-card {
+        animation: notifSlideIn 0.3s ease-out;
+    }
+
+    @keyframes notifSlideIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Stagger animation */
+    .notification-list .notif-card:nth-child(1) { animation-delay: 0ms; }
+    .notification-list .notif-card:nth-child(2) { animation-delay: 40ms; }
+    .notification-list .notif-card:nth-child(3) { animation-delay: 80ms; }
+    .notification-list .notif-card:nth-child(4) { animation-delay: 120ms; }
+    .notification-list .notif-card:nth-child(5) { animation-delay: 160ms; }
+    .notification-list .notif-card:nth-child(6) { animation-delay: 200ms; }
+    .notification-list .notif-card:nth-child(7) { animation-delay: 240ms; }
+    .notification-list .notif-card:nth-child(8) { animation-delay: 280ms; }
+    .notification-list .notif-card:nth-child(9) { animation-delay: 320ms; }
+    .notification-list .notif-card:nth-child(10) { animation-delay: 360ms; }
+
+    /* Responsive */
+    @media (max-width: 576px) {
+        .notif-page-header {
+            padding: 1.5rem;
+            border-radius: 16px;
+        }
+        .notif-header-left h2 {
+            font-size: 1.3rem;
+        }
+        .notif-card {
+            padding: 1rem;
+            border-radius: 14px;
+        }
+        .notif-card-icon {
+            width: 42px;
+            height: 42px;
+            min-width: 42px;
+            border-radius: 12px;
+            font-size: 1rem;
+        }
+        .notif-filters {
+            gap: 0.35rem;
+        }
+        .notif-filter-btn {
+            padding: 0.35rem 0.75rem;
+            font-size: 0.75rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-xl-7">
+
+            <!-- Header -->
+            <div class="notif-page-header fade-in">
+                <div class="notif-header-left">
+                    <div class="notif-header-icon">
+                        <i class="fas fa-bell"></i>
+                    </div>
+                    <div>
+                        <h2>Уведомления</h2>
+                        <p>
+                            {% if unread_count %}
+                                {{ unread_count }} непрочитанн{{ unread_count|pluralize:"ый,ых,ых" }}
+                            {% else %}
+                                Все прочитано
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                {% if unread_count %}
+                <div class="notif-header-actions">
+                    <form method="post" action="{% url 'notification_mark_all_read' %}" style="margin: 0;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-mark-all">
+                            <i class="fas fa-check-double"></i> Прочитать все
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Filters -->
+            <div class="notif-filters fade-in">
+                <button class="notif-filter-btn active" onclick="filterNotifs(this, 'all')">
+                    <i class="fas fa-layer-group"></i> Все
+                </button>
+                <button class="notif-filter-btn" onclick="filterNotifs(this, 'unread')">
+                    <i class="fas fa-circle" style="font-size: 0.5rem; color: var(--primary);"></i> Непрочитанные
+                </button>
+            </div>
+
+            <!-- Notification List -->
+            {% if notifications %}
+            <div class="notification-list" id="notifList">
+                {% for notification in notifications %}
+                <a href="{% url 'notification_mark_read' notification.id %}?next={% url 'notification_list' %}"
+                   class="notif-card {% if not notification.is_read %}unread{% else %}read{% endif %}"
+                   data-read="{{ notification.is_read|yesno:'true,false' }}">
+                    <div class="notif-card-icon {{ notification.notification_type|default:'default' }}">
+                        <i class="fas fa-{% if notification.notification_type == 'status_changed' %}arrows-rotate
+                            {% elif notification.notification_type == 'assigned' %}user-check
+                            {% elif notification.notification_type == 'ticket_completed' %-status-check
+                            {% elif notification.notification_type == 'comment_added' %}comment-dots
+                            {% elif notification.notification_type == 'ticket_created' %}circle-plus
+                            {% elif notification.notification_type == 'system' %}flag
+                            {% elif notification.notification_type == 'payment' %}credit-card
+                            {% else %}bell{% endif %}"></i>
+                    </div>
+                    <div class="notif-card-body">
+                        <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.15rem;">
+                            <span class="notif-card-title">{{ notification.title }}</span>
+                            {% if notification.notification_type %}
+                            <span class="notif-type-badge {{ notification.notification_type }}">
+                                {% if notification.notification_type == 'status_changed' %}Статус
+                                {% elif notification.notification_type == 'assigned' %}Назначение
+                                {% elif notification.notification_type == 'ticket_completed' %}Выполнено
+                                {% elif notification.notification_type == 'comment_added' %}Комментарий
+                                {% elif notification.notification_type == 'ticket_created' %}Новая
+                                {% elif notification.notification_type == 'system' %}Система
+                                {% elif notification.notification_type == 'payment' %}Оплата
+                                {% else %}info{% endif %}
+                            </span>
+                            {% endif %}
+                        </div>
+                        <div class="notif-card-text">{{ notification.message|truncatewords:30 }}</div>
+                        <div class="notif-card-footer">
+                            <span class="notif-card-time">
+                                <i class="far fa-clock"></i> {{ notification.created_at|timesince }} назад
+                            </span>
+                            {% if notification.ticket %}
+                            <a href="{% url 'ticket_detail' notification.ticket.id %}" class="notif-card-link" onclick="event.stopPropagation();">
+                                <i class="fas fa-arrow-up-right-from-square" style="font-size: 0.7rem;"></i>
+                                Заявка #{{ notification.ticket.ticket_number }}
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if not notification.is_read %}
+                    <div class="notif-unread-dot"></div>
+                    {% endif %}
+                </a>
+                {% endfor %}
+            </div>
+
+            <!-- Pagination -->
+            {% if notifications.has_next or notifications.has_previous %}
+            <div class="notif-pagination">
+                {% if notifications.has_previous %}
+                <a href="?page={{ notifications.previous_page_number }}" class="notif-page-btn nav-arrow">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+                {% endif %}
+
+                {% for num in notifications.paginator.page_range %}
+                    {% if num == 1 or num == notifications.paginator.num_pages or num|add:"-1" == notifications.number or num|add:"1" == notifications.number or num == notifications.number %}
+                        <a href="?page={{ num }}" class="notif-page-btn {% if notifications.number == num %}active{% endif %}">{{ num }}</a>
+                    {% elif num|add:"-2" == notifications.number or num|add:"2" == notifications.number %}
+                        <span style="padding: 0 0.3rem; color: #aaa;">...</span>
+                    {% endif %}
+                {% endfor %}
+
+                {% if notifications.has_next %}
+                <a href="?page={{ notifications.next_page_number }}" class="notif-page-btn nav-arrow">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            {% else %}
+            <div class="notif-empty fade-in">
+                <div class="notif-empty-icon">
+                    <i class="fas fa-bell-slash"></i>
+                </div>
+                <h4>Нет уведомлений</h4>
+                <p>Здесь будут отображаться уведомления по вашим заявкам.<br>Пока всё тихо!</p>
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Filter notifications (unread / all)
+    function filterNotifs(btn, type) {
+        document.querySelectorAll('.notif-filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        const cards = document.querySelectorAll('.notif-card');
+        cards.forEach(card => {
+            if (type === 'all') {
+                card.style.display = 'flex';
+            } else if (type === 'unread') {
+                card.style.display = card.dataset.read === 'false' ? 'flex' : 'none';
+            }
+        });
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,372 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Карта заявок — ТатАИСнефть{% endblock %}
+
+{% block extra_css %}
+<style>
+    .map-header {
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        border-radius: var(--radius);
+        padding: 1.8rem 2rem;
+        color: white;
+        margin-bottom: 1.5rem;
+    }
+    .map-header h2 {
+        font-weight: 800;
+        margin-bottom: 0.3rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .map-header p { opacity: 0.9; margin: 0; }
+    .map-container {
+        background: white;
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+        height: calc(100vh - 250px);
+        min-height: 500px;
+    }
+    .map-sidebar {
+        position: absolute; top: 0; left: 0;
+        width: 360px; height: 100%;
+        background: white; z-index: 100;
+        box-shadow: 4px 0 20px rgba(0,0,0,0.08);
+        display: flex; flex-direction: column;
+        transition: transform 0.3s ease;
+    }
+    .map-sidebar.collapsed { transform: translateX(-100%); }
+    .sidebar-toggle {
+        position: absolute; top: 1rem; left: 370px; z-index: 101;
+        background: white; border: none;
+        border-radius: 0 8px 8px 0;
+        padding: 0.6rem;
+        box-shadow: 4px 0 10px rgba(0,0,0,0.08);
+        cursor: pointer; transition: var(--transition);
+    }
+    .sidebar-toggle:hover { background: var(--primary); color: white; }
+    .sidebar-toggle.collapsed { left: 0; }
+    .sidebar-header {
+        padding: 1.2rem 1.5rem;
+        border-bottom: 1px solid #f0f0f0;
+        flex-shrink: 0;
+    }
+    .sidebar-header h5 {
+        font-weight: 700; margin: 0 0 0.8rem 0;
+        display: flex; align-items: center; gap: 8px;
+    }
+    .sidebar-header h5 i { color: var(--primary); }
+    .sidebar-search input { font-size: 0.85rem; padding: 0.5rem 0.8rem; }
+    .sidebar-list { flex: 1; overflow-y: auto; padding: 0; }
+    .sidebar-list::-webkit-scrollbar { width: 4px; }
+    .sidebar-list::-webkit-scrollbar-thumb { background: #ddd; border-radius: 2px; }
+    .map-ticket-item {
+        display: flex; align-items: flex-start; gap: 0.8rem;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid #f8f8f8;
+        cursor: pointer; transition: var(--transition);
+        text-decoration: none; color: inherit;
+    }
+    .map-ticket-item:hover { background: rgba(0,152,70,0.04); }
+    .map-ticket-item.active {
+        background: rgba(0,152,70,0.08);
+        border-left: 3px solid var(--primary);
+    }
+    .map-ticket-icon {
+        width: 36px; height: 36px; min-width: 36px;
+        border-radius: 10px;
+        background: rgba(0,152,70,0.08);
+        display: flex; align-items: center; justify-content: center;
+        color: var(--primary); font-size: 0.85rem; margin-top: 2px;
+    }
+    .map-ticket-info h6 {
+        font-weight: 600; font-size: 0.85rem;
+        margin-bottom: 0.2rem; color: var(--dark);
+    }
+    .map-ticket-info .address {
+        font-size: 0.78rem; color: var(--gray);
+        margin-bottom: 0.3rem;
+        display: flex; align-items: center; gap: 4px;
+    }
+    .map-ticket-info .meta { display: flex; gap: 0.5rem; align-items: center; }
+    #mapContainer { width: 100%; height: 100%; }
+    .ymap-popup { font-family: 'Montserrat', sans-serif; max-width: 280px; }
+    .ymap-popup h6 { font-weight: 700; font-size: 0.88rem; margin-bottom: 0.3rem; color: #1a1a2e; }
+    .ymap-popup p { font-size: 0.8rem; color: #6c757d; margin-bottom: 0.3rem; }
+    .ymap-popup a { color: #009846; font-weight: 600; font-size: 0.82rem; text-decoration: none; }
+    .ymap-popup a:hover { text-decoration: underline; }
+    .map-legend {
+        position: absolute; bottom: 1.5rem; right: 1.5rem;
+        background: white; border-radius: var(--radius-sm);
+        box-shadow: var(--shadow); padding: 1rem;
+        z-index: 100; font-size: 0.78rem;
+    }
+    .map-legend h6 { font-weight: 700; margin-bottom: 0.6rem; font-size: 0.82rem; }
+    .legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 0.3rem; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .sidebar-stats {
+        padding: 0.8rem 1.5rem;
+        border-bottom: 1px solid #f0f0f0;
+        display: flex; gap: 1rem; flex-wrap: wrap; flex-shrink: 0;
+    }
+    .sidebar-stat { font-size: 0.75rem; color: var(--gray); }
+    .sidebar-stat strong { color: var(--dark); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 py-4">
+    <div class="map-header fade-in">
+        <div class="row align-items-center">
+            <div class="col">
+                <h2><i class="fas fa-map-marked-alt"></i> Карта заявок</h2>
+                <p>Географическое распределение активных заявок в Татарстане</p>
+            </div>
+            <div class="col-auto">
+                <span class="badge" style="background:rgba(255,255,255,0.2);padding:0.5rem 1rem;font-size:0.85rem;">
+                    <i class="fas fa-map-pin me-1"></i> {{ tickets|length }} заявок на карте
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="map-container fade-in" style="position:relative;">
+        <!-- Sidebar -->
+        <div class="map-sidebar" id="mapSidebar">
+            <div class="sidebar-header">
+                <h5><i class="fas fa-list"></i> Список заявок</h5>
+                <div class="sidebar-search">
+                    <input type="text" class="form-control" placeholder="Поиск по адресу..." id="sidebarSearch" oninput="applyFilters()">
+                </div>
+                <select class="form-select form-select-sm mt-2" id="statusFilter" onchange="applyFilters()">
+                    <option value="">Все статусы</option>
+                    <option value="new">Новая</option>
+                    <option value="assigned">Назначена</option>
+                    <option value="in_progress">В работе</option>
+                    <option value="parts_needed">Требуется запчасть</option>
+                    <option value="awaiting_confirmation">Ожидает подтверждения</option>
+                    <option value="completed">Завершена</option>
+                    <option value="rejected">Отклонена</option>
+                </select>
+                <div class="sidebar-stats mt-2">
+                    <span class="sidebar-stat">Всего: <strong>{{ tickets|length }}</strong></span>
+                    <span class="sidebar-stat">Новых: <strong>{{ new_count|default:'0' }}</strong></span>
+                    <span class="sidebar-stat">В работе: <strong>{{ progress_count|default:'0' }}</strong></span>
+                </div>
+            </div>
+            <div class="sidebar-list" id="sidebarList">
+                {% for ticket in tickets %}
+                <a href="{% url 'ticket_detail' ticket.id %}"
+                   class="map-ticket-item"
+                   data-address="{{ ticket.address }} {{ ticket.city }}"
+                   data-id="{{ ticket.id }}"
+                   data-status="{{ ticket.status }}"
+                   onclick="event.preventDefault(); highlightOnMap({{ ticket.id }});">
+                    <div class="map-ticket-icon">
+                        <i class="fas fa-{% if ticket.status == 'new' %}plus-circle{% elif ticket.status == 'assigned' %}user-check{% elif ticket.status == 'in_progress' %}spinner{% elif ticket.status == 'completed' %}check-circle{% elif ticket.status == 'rejected' %}times-circle{% elif ticket.status == 'parts_needed' %}puzzle-piece{% elif ticket.status == 'awaiting_confirmation' %}hourglass-half{% else %}clock{% endif %}"></i>
+                    </div>
+                    <div class="map-ticket-info">
+                        <h6>#{{ ticket.ticket_number }}{% if ticket.service_type %} — {{ ticket.service_type }}{% endif %}</h6>
+                        <div class="address">
+                            <i class="fas fa-map-marker-alt"></i>
+                            {{ ticket.city }}, {{ ticket.address|truncatewords:5 }}
+                        </div>
+                        <div class="meta">
+                            <span class="status-badge status-{{ ticket.status }}">{{ ticket.get_status_display }}</span>
+                            <span style="font-size:0.75rem;color:#aaa;">{{ ticket.created_at|date:"d.m.Y" }}</span>
+                        </div>
+                    </div>
+                </a>
+                {% empty %}
+                <div class="text-center py-4">
+                    <i class="fas fa-map fa-2x text-muted mb-2 d-block"></i>
+                    <p class="text-muted" style="font-size:0.88rem;">Нет заявок для отображения</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+
+        <div id="mapContainer"></div>
+
+        <div class="map-legend">
+            <h6><i class="fas fa-info-circle me-1"></i> Легенда</h6>
+            <div class="legend-item"><div class="legend-dot" style="background:#007bff;"></div><span>Новая</span></div>
+            <div class="legend-item"><div class="legend-dot" style="background:#17a2b8;"></div><span>Назначена</span></div>
+            <div class="legend-item"><div class="legend-dot" style="background:#ffc107;"></div><span>В работе</span></div>
+            <div class="legend-item"><div class="legend-dot" style="background:#6c757d;"></div><span>Запчасть</span></div>
+            <div class="legend-item"><div class="legend-dot" style="background:#6f42c1;"></div><span>Подтверждение</span></div>
+            <div class="legend-item"><div class="legend-dot" style="background:#28a745;"></div><span>Завершена</span></div>
+            <div class="legend-item"><div class="legend-dot" style="background:#dc3545;"></div><span>Отклонена</span></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://api-maps.yandex.ru/2.1/?apikey=8b93a78b-1899-49d5-9cf5-901993e56da8&lang=ru_RU"></script>
+<script>
+    // Данные заявок — координаты передаются СТРОКАМИ и парсятся в JS
+    // Это решает проблему с запятыми в русской локали Django
+    var ticketsData = [
+        {% for ticket in tickets %}
+        {
+            id: {{ ticket.id }},
+            number: '#{{ ticket.ticket_number|escapejs }}',
+            address: '{{ ticket.city|escapejs }}, {{ ticket.address|escapejs }}',
+            serviceType: '{{ ticket.service_type|default:""|escapejs }}',
+            status: '{{ ticket.status }}',
+            statusDisplay: '{{ ticket.get_status_display|escapejs }}',
+            lat: parseCoord('{{ ticket.latitude }}'),
+            lng: parseCoord('{{ ticket.longitude }}')
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+
+    // Парсим координаты: замена запятой на точку, дефолт если None/пусто
+    function parseCoord(val) {
+        if (!val || val.trim() === '' || val.trim() === 'None') return null;
+        return parseFloat(String(val).replace(',', '.')) || null;
+    }
+
+    var statusColors = {
+        'new': '#007bff',
+        'assigned': '#17a2b8',
+        'in_progress': '#ffc107',
+        'parts_needed': '#6c757d',
+        'awaiting_confirmation': '#6f42c1',
+        'completed': '#28a745',
+        'rejected': '#dc3545'
+    };
+
+    var ymap, placemarks = {};
+
+    ymaps.ready(function() {
+        ymap = new ymaps.Map('mapContainer', {
+            center: [54.9, 52.3],
+            zoom: 8,
+            controls: ['zoomControl', 'fullscreenControl', 'typeSelector']
+        });
+
+        var validBounds = [];
+
+        for (var i = 0; i < ticketsData.length; i++) {
+            var ticket = ticketsData[i];
+
+            // Если координат нет — подставляем дефолтные для Татарстана
+            var lat = ticket.lat || 54.9;
+            var lng = ticket.lng || 52.3;
+            var hasRealCoords = (ticket.lat !== null && ticket.lng !== null);
+
+            var color = statusColors[ticket.status] || '#6c757d';
+
+            var balloonBody = '<div class="ymap-popup">' +
+                '<p><i class="fas fa-map-marker-alt"></i> ' + ticket.address + '</p>' +
+                '<p><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + color + ';margin-right:4px;"></span>' + ticket.statusDisplay + '</p>' +
+                '<a href="/tickets/' + ticket.id + '/"><i class="fas fa-external-link-alt"></i> Открыть заявку</a>' +
+                '</div>';
+
+            var balloonHeader = '<div class="ymap-popup"><h6>' + ticket.number;
+            if (ticket.serviceType) balloonHeader += ' — ' + ticket.serviceType;
+            balloonHeader += '</h6></div>';
+
+            var pm = new ymaps.Placemark(
+                [lat, lng],
+                {
+                    balloonContentHeader: balloonHeader,
+                    balloonContentBody: balloonBody
+                },
+                {
+                    preset: 'islands#circleDotIcon',
+                    iconColor: color,
+                    balloonMaxWidth: 300
+                }
+            );
+
+            ymap.geoObjects.add(pm);
+            placemarks[ticket.id] = pm;
+
+            if (hasRealCoords) validBounds.push([lat, lng]);
+        }
+
+        // Масштабируем карту по реальным координатам
+        if (validBounds.length > 0) {
+            ymap.setBounds(ymap.util.bounds.fromPoints(validBounds), {
+                checkZoomRange: true,
+                zoomMargin: 50
+            });
+        }
+    });
+
+    function highlightOnMap(ticketId) {
+        // Убираем активный класс со всех
+        var items = document.querySelectorAll('.map-ticket-item');
+        for (var i = 0; i < items.length; i++) items[i].classList.remove('active');
+
+        // Подсвечиваем в сайдбаре
+        var item = document.querySelector('.map-ticket-item[data-id="' + ticketId + '"]');
+        if (item) {
+            item.classList.add('active');
+            item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        // Находим заявку в данных
+        var ticket = null;
+        for (var i = 0; i < ticketsData.length; i++) {
+            if (ticketsData[i].id == ticketId) { ticket = ticketsData[i]; break; }
+        }
+        if (!ticket) return;
+
+        // Панорамируем к метке
+        var lat = ticket.lat || 54.9;
+        var lng = ticket.lng || 52.3;
+        if (ymap && placemarks[ticketId]) {
+            ymap.panTo([lat, lng], { duration: 500 });
+            placemarks[ticketId].balloon.open();
+        }
+    }
+
+    function toggleSidebar() {
+        var sidebar = document.getElementById('mapSidebar');
+        var toggle = document.getElementById('sidebarToggle');
+        sidebar.classList.toggle('collapsed');
+        toggle.classList.toggle('collapsed');
+        var icon = toggle.querySelector('i');
+        if (sidebar.classList.contains('collapsed')) {
+            icon.classList.remove('fa-chevron-left');
+            icon.classList.add('fa-chevron-right');
+        } else {
+            icon.classList.remove('fa-chevron-right');
+            icon.classList.add('fa-chevron-left');
+        }
+    }
+
+    function applyFilters() {
+        var search = document.getElementById('sidebarSearch').value.toLowerCase();
+        var statusFilter = document.getElementById('statusFilter').value;
+
+        var items = document.querySelectorAll('.map-ticket-item');
+        for (var i = 0; i < items.length; i++) {
+            var item = items[i];
+            var address = (item.getAttribute('data-address') || '').toLowerCase();
+            var ticketId = item.getAttribute('data-id');
+            var ticketStatus = item.getAttribute('data-status');
+
+            var matchSearch = !search || address.indexOf(search) !== -1;
+            var matchStatus = !statusFilter || statusFilter === ticketStatus;
+            var visible = matchSearch && matchStatus;
+
+            item.style.display = visible ? '' : 'none';
+
+            // Скрываем/показываем метку на карте
+            if (placemarks[ticketId]) {
+                placemarks[ticketId].options.set('visible', visible);
+            }
+        }
+    }
+</script>
+{% endblock %}

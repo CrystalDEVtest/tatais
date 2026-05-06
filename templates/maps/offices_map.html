@@ -1,0 +1,292 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Наши офисы — ТатАИСнефть{% endblock %}
+
+{% block extra_css %}
+<style>
+    .offices-header {
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        border-radius: var(--radius);
+        padding: 1.8rem 2rem;
+        color: white;
+        margin-bottom: 1.5rem;
+    }
+    .offices-header h2 {
+        font-weight: 800;
+        margin-bottom: 0.3rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .offices-header p { opacity: 0.9; margin: 0; }
+    .map-container {
+        background: white;
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+        height: calc(100vh - 250px);
+        min-height: 500px;
+    }
+    #officesMapContainer { width: 100%; height: 100%; }
+    .offices-info {
+        background: white;
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 2rem;
+        margin-top: 1.5rem;
+    }
+    .office-card {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 1.2rem;
+        border-radius: var(--radius-sm);
+        background: #f8f9fa;
+        margin-bottom: 1rem;
+        transition: var(--transition);
+        cursor: pointer;
+    }
+    .office-card:hover {
+        background: white;
+        box-shadow: var(--shadow);
+        transform: translateX(5px);
+    }
+    .office-card.active {
+        border-left: 3px solid var(--primary);
+        background: rgba(0,152,70,0.05);
+    }
+    .office-icon {
+        width: 50px;
+        height: 50px;
+        min-width: 50px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, rgba(0,152,70,0.1), rgba(0,179,83,0.15));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.3rem;
+        color: var(--primary);
+    }
+    .office-card h5 {
+        font-weight: 700;
+        margin-bottom: 0.3rem;
+        color: var(--dark);
+    }
+    .office-card p {
+        font-size: 0.88rem;
+        color: var(--gray);
+        margin: 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 py-4">
+    <div class="offices-header fade-in">
+        <h2><i class="fas fa-building"></i> Наши офисы</h2>
+        <p>Офисы обслуживания ООО «ТатАИСнефть» в Республике Татарстан</p>
+    </div>
+
+    <div class="map-container fade-in">
+        <div id="officesMapContainer"></div>
+    </div>
+
+    <div class="offices-info fade-in">
+        <div class="row g-4">
+            <div class="col-lg-4 col-md-6">
+                <div class="office-card" data-office="0" onclick="goToOffice(0)">
+                    <div class="office-icon">
+                        <i class="fas fa-map-marker-alt"></i>
+                    </div>
+                    <div>
+                        <h5>Альметьевск (Головной офис)</h5>
+                        <p><i class="fas fa-location-dot me-1"></i> ул. Ленина, д. 33</p>
+                        <p class="mt-1"><i class="fas fa-phone me-1"></i> +7 (8553) 30-50-00</p>
+                        <p class="mt-1"><i class="fas fa-phone me-1"></i> +7 (917) 907-96-29</p>
+                        <p class="mt-1"><i class="fas fa-clock me-1"></i> Пн-Пт: 8:00-20:00, Сб: 9:00-18:00</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <div class="office-card" data-office="1" onclick="goToOffice(1)">
+                    <div class="office-icon">
+                        <i class="fas fa-map-marker-alt"></i>
+                    </div>
+                    <div>
+                        <h5>Бугульма</h5>
+                        <p><i class="fas fa-location-dot me-1"></i> ул. Советская, 75А</p>
+                        <p class="mt-1"><i class="fas fa-phone me-1"></i> +7 (8553) 30-50-00</p>
+                        <p class="mt-1"><i class="fas fa-phone me-1"></i> +7 (917) 907-96-29</p>
+                        <p class="mt-1"><i class="fas fa-clock me-1"></i> Пн-Пт: 8:00-20:00, Сб: 9:00-18:00</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-12">
+                <div class="office-card" data-office="2" onclick="goToOffice(2)">
+                    <div class="office-icon">
+                        <i class="fas fa-map-marker-alt"></i>
+                    </div>
+                    <div>
+                        <h5>Лениногорск</h5>
+                        <p><i class="fas fa-location-dot me-1"></i> ул. Кутузова, 3</p>
+                        <p class="mt-1"><i class="fas fa-phone me-1"></i> +7 (8553) 30-50-00</p>
+                        <p class="mt-1"><i class="fas fa-phone me-1"></i> +7 (917) 907-96-29</p>
+                        <p class="mt-1"><i class="fas fa-clock me-1"></i> Пн-Пт: 8:00-20:00, Сб: 9:00-18:00</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://api-maps.yandex.ru/2.1/?apikey=8b93a78b-1899-49d5-9cf5-901993e56da8&lang=ru_RU"></script>
+<script>
+    // Список офисов — адреса для геокодирования
+    var offices = [
+        {
+            name: 'ТатАИСнефть — Альметьевск (Головной офис)',
+            searchQuery: 'Россия, Татарстан, Альметьевск, улица Ленина, 33',
+            phone: '+7 (8553) 30-50-00',
+            phone2: '+7 (917) 907-96-29',
+            hours: 'Пн-Пт: 8:00-20:00, Сб: 9:00-18:00',
+            // Fallback если геокодер не найдёт
+            fallback: [54.9167, 52.3167]
+        },
+        {
+            name: 'ТатАИСнефть — Бугульма',
+            searchQuery: 'Россия, Татарстан, Бугульма, улица Советская, 75А',
+            phone: '+7 (8553) 30-50-00',
+            phone2: '+7 (917) 907-96-29',
+            hours: 'Пн-Пт: 8:00-20:00, Сб: 9:00-18:00',
+            fallback: [54.5389, 52.7958]
+        },
+        {
+            name: 'ТатАИСнефть — Лениногорск',
+            searchQuery: 'Россия, Татарстан, Лениногорск, улица Кутузова, 3',
+            phone: '+7 (8553) 30-50-00',
+            phone2: '+7 (917) 907-96-29',
+            hours: 'Пн-Пт: 8:00-20:00, Сб: 9:00-18:00',
+            fallback: [54.5961, 52.4028]
+        }
+    ];
+
+    var officemap, officePlacemarks = [];
+
+    ymaps.ready(function() {
+        officemap = new ymaps.Map('officesMapContainer', {
+            center: [54.7, 52.6],
+            zoom: 9,
+            controls: ['zoomControl', 'fullscreenControl', 'searchControl']
+        });
+
+        // Геокодируем каждый офис
+        var geocodePromises = [];
+
+        for (var i = 0; i < offices.length; i++) {
+            (function(idx) {
+                var office = offices[idx];
+
+                // Балун-контент
+                var balloon = '<div style="font-family:Montserrat,sans-serif;">' +
+                    '<h6 style="font-weight:700;margin-bottom:8px;color:#1a1a2e;">' + office.name + '</h6>' +
+                    '<p style="font-size:0.85rem;color:#6c757d;margin:4px 0;"><i class="fas fa-location-dot" style="color:#009846;"></i> <b>Адрес:</b> ' + office.searchQuery.split(',').slice(-2).join(',').trim() + '</p>' +
+                    '<p style="font-size:0.85rem;color:#6c757d;margin:4px 0;"><i class="fas fa-phone" style="color:#009846;"></i> <b>Телефон:</b> ' + office.phone + '</p>' +
+                    '<p style="font-size:0.85rem;color:#6c757d;margin:4px 0;"><i class="fas fa-mobile-alt" style="color:#009846;"></i> <b>Моб.:</b> ' + office.phone2 + '</p>' +
+                    '<p style="font-size:0.85rem;color:#6c757d;margin:4px 0;"><i class="fas fa-clock" style="color:#009846;"></i> <b>Режим:</b> ' + office.hours + '</p>' +
+                    '</div>';
+
+                var promise = ymaps.geocode(office.searchQuery, { results: 1 })
+                    .then(function(result) {
+                        var firstGeoObject = result.geoObjects.get(0);
+                        var coords;
+
+                        if (firstGeoObject) {
+                            coords = firstGeoObject.geometry.getCoordinates();
+                            console.log(office.name + ': ' + coords);
+                        } else {
+                            coords = office.fallback;
+                            console.warn(office.name + ': не найден, используем fallback ' + coords);
+                        }
+
+                        // Создаём метку с кастомной иконкой
+                        var placemark = new ymaps.Placemark(
+                            coords,
+                            {
+                                balloonContentHeader: '<div style="font-family:Montserrat,sans-serif;"><b style="color:#1a1a2e;">' + office.name + '</b></div>',
+                                balloonContentBody: balloon,
+                                hintContent: office.name
+                            },
+                            {
+                                preset: 'islands#redDotIcon',
+                                iconCaptionMaxWidth: '200'
+                            }
+                        );
+
+                        officemap.geoObjects.add(placemark);
+                        officePlacemarks.push(placemark);
+
+                        return coords;
+                    })
+                    .catch(function(err) {
+                        console.error('Геокодирование ошибка для ' + office.name + ':', err);
+                        var coords = office.fallback;
+
+                        var placemark = new ymaps.Placemark(
+                            coords,
+                            {
+                                balloonContentHeader: '<div style="font-family:Montserrat,sans-serif;"><b style="color:#1a1a2e;">' + office.name + '</b></div>',
+                                balloonContentBody: balloon,
+                                hintContent: office.name
+                            },
+                            {
+                                preset: 'islands#redDotIcon',
+                                iconCaptionMaxWidth: '200'
+                            }
+                        );
+
+                        officemap.geoObjects.add(placemark);
+                        officePlacemarks.push(placemark);
+
+                        return coords;
+                    });
+
+                geocodePromises.push(promise);
+            })(i);
+        }
+
+        // Когда все геокодирования завершены — масштабируем карту
+        Promise.all(geocodePromises).then(function(allCoords) {
+            if (allCoords.length > 0) {
+                officemap.setBounds(ymaps.util.bounds.fromPoints(allCoords), {
+                    checkZoomRange: true,
+                    zoomMargin: 60
+                });
+            }
+        });
+    });
+
+    // Клик по карточке офиса — прокрутка к нему на карте
+    function goToOffice(index) {
+        // Подсветка карточки
+        var cards = document.querySelectorAll('.office-card');
+        for (var i = 0; i < cards.length; i++) cards[i].classList.remove('active');
+        var card = document.querySelector('.office-card[data-office="' + index + '"]');
+        if (card) card.classList.add('active');
+
+        // Панорамирование к метке
+        if (officemap && officePlacemarks[index]) {
+            officemap.panTo(officePlacemarks[index].geometry.getCoordinates(), {
+                duration: 600,
+                flying: true
+            });
+            // Открываем балун с небольшой задержкой (чтобы панорамирование завершилось)
+            setTimeout(function() {
+                officePlacemarks[index].balloon.open();
+            }, 700);
+        }
+    }
+</script>
+{% endblock %}

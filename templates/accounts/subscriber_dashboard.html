@@ -1,0 +1,279 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Личный кабинет — ТатАИСнефть{% endblock %}
+
+{% block extra_css %}
+<style>
+    .welcome-banner {
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        border-radius: var(--radius);
+        padding: 2rem;
+        color: white;
+        position: relative;
+        overflow: hidden;
+        margin-bottom: 2rem;
+    }
+
+    .welcome-banner::before {
+        content: '';
+        position: absolute;
+        top: -30%;
+        right: -5%;
+        width: 250px;
+        height: 250px;
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 50%;
+    }
+
+    .welcome-banner h2 {
+        font-weight: 800;
+        margin-bottom: 0.3rem;
+    }
+
+    .welcome-banner p {
+        opacity: 0.9;
+        margin: 0;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: var(--radius);
+        padding: 1.5rem;
+        box-shadow: var(--shadow);
+        transition: var(--transition);
+        height: 100%;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-hover);
+    }
+
+    .stat-card-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.3rem;
+        margin-bottom: 1rem;
+    }
+
+    .stat-card-icon.active { background: rgba(255, 193, 7, 0.12); color: #ffc107; }
+    .stat-card-icon.completed { background: rgba(40, 167, 69, 0.12); color: #28a745; }
+    .stat-card-icon.total { background: rgba(0, 152, 70, 0.12); color: var(--primary); }
+
+    .stat-card h3 {
+        font-weight: 800;
+        font-size: 2rem;
+        color: var(--dark);
+        margin-bottom: 0.2rem;
+    }
+
+    .stat-card p {
+        color: var(--gray);
+        font-size: 0.85rem;
+        margin: 0;
+    }
+
+    .tickets-section {
+        background: white;
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+    }
+
+    .tickets-section .section-header {
+        padding: 1.2rem 1.5rem;
+        border-bottom: 1px solid #f0f0f0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .tickets-section .section-header h5 {
+        font-weight: 700;
+        margin: 0;
+        display: flex;
+        align-items: center;
+            gap: 8px;
+    }
+
+    .tickets-section .section-header h5 i {
+        color: var(--primary);
+    }
+
+    .ticket-item {
+        display: flex;
+        align-items: center;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid #f8f8f8;
+        transition: var(--transition);
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .ticket-item:hover {
+        background: #f8fffe;
+    }
+
+    .ticket-item:last-child {
+        border-bottom: none;
+    }
+
+    .ticket-item-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        background: rgba(0, 152, 70, 0.08);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--primary);
+        font-size: 1rem;
+        margin-right: 1rem;
+        flex-shrink: 0;
+    }
+
+    .ticket-item-info h6 {
+        font-weight: 600;
+        margin-bottom: 0.15rem;
+        font-size: 0.9rem;
+    }
+
+    .ticket-item-info small {
+        color: var(--gray);
+        font-size: 0.8rem;
+    }
+
+    .ticket-item-meta {
+        margin-left: auto;
+        text-align: right;
+        flex-shrink: 0;
+    }
+
+    .ticket-item-date {
+        font-size: 0.78rem;
+        color: #aaa;
+        margin-bottom: 0.3rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Welcome Banner -->
+    <div class="welcome-banner fade-in">
+        <div class="row align-items-center">
+            <div class="col">
+                <h2><i class="fas fa-hand-sparkles me-2"></i> Добро пожаловать, {{ user.first_name|default:user.username }}!</h2>
+                <p>Управляйте вашими заявками и отслеживайте их статус в личном кабинете</p>
+            </div>
+            <div class="col-auto">
+                <a href="{% url 'ticket_create' %}" class="btn btn-hero-primary">
+                    <i class="fas fa-plus me-1"></i> Подать заявку
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-lg-4 col-md-4 col-6 slide-up">
+            <div class="stat-card">
+                <div class="stat-card-icon active">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <h3>{{ active_tickets|length }}</h3>
+                <p>Активных заявок</p>
+            </div>
+        </div>
+        <div class="col-lg-4 col-md-4 col-6 slide-up">
+            <div class="stat-card">
+                <div class="stat-card-icon completed">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h3>{{ completed_count }}</h3>
+                <p>Выполнено заявок</p>
+            </div>
+        </div>
+        <div class="col-lg-4 col-md-4 col-12 slide-up">
+            <div class="stat-card">
+                <div class="stat-card-icon total">
+                    <i class="fas fa-ticket-alt"></i>
+                </div>
+                <h3>{{ total_count }}</h3>
+                <p>Всего заявок</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Active Tickets -->
+        <div class="col-lg-6">
+            <div class="tickets-section fade-in">
+                <div class="section-header">
+                    <h5><i class="fas fa-spinner fa-pulse"></i> Активные заявки</h5>
+                    <span class="badge bg-warning text-dark">{{ active_tickets|length }}</span>
+                </div>
+                {% if active_tickets %}
+                    {% for ticket in active_tickets %}
+                    <a href="{% url 'ticket_detail' ticket.id %}" class="ticket-item">
+                        <div class="ticket-item-icon">
+                            <i class="fas fa-{% if ticket.service_type == 'internet' %}wifi{% elif ticket.service_type == 'tv' %}tv{% elif ticket.service_type == 'phone' %}phone-alt{% else %}layer-group{% endif %}"></i>
+                        </div>
+                        <div class="ticket-item-info">
+                            <h6>#{{ ticket.ticket_number }}</h6>
+                            <small>{{ ticket.get_service_type_display }} — {{ ticket.address|truncatewords:5 }}</small>
+                        </div>
+                        <div class="ticket-item-meta">
+                            <div class="ticket-item-date">{{ ticket.created_at|date:"d.m.Y" }}</div>
+                            <span class="status-badge status-{{ ticket.status }}">{{ ticket.get_status_display }}</span>
+                        </div>
+                    </a>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-4 px-3">
+                        <i class="fas fa-check-double fa-2x text-success mb-2"></i>
+                        <p class="text-muted mb-0" style="font-size: 0.9rem;">Нет активных заявок</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Completed Tickets -->
+        <div class="col-lg-6">
+            <div class="tickets-section fade-in">
+                <div class="section-header">
+                    <h5><i class="fas fa-check-double"></i> Выполненные заявки</h5>
+                    <span class="badge bg-success">{{ completed_count }}</span>
+                </div>
+                {% if completed_tickets %}
+                    {% for ticket in completed_tickets %}
+                    <a href="{% url 'ticket_detail' ticket.id %}" class="ticket-item">
+                        <div class="ticket-item-icon">
+                            <i class="fas fa-{% if ticket.service_type == 'internet' %}wifi{% elif ticket.service_type == 'tv' %}tv{% elif ticket.service_type == 'phone' %}phone-alt{% else %}layer-group{% endif %}"></i>
+                        </div>
+                        <div class="ticket-item-info">
+                            <h6>#{{ ticket.ticket_number }}</h6>
+                            <small>{{ ticket.get_service_type_display }} — {{ ticket.address|truncatewords:5 }}</small>
+                        </div>
+                        <div class="ticket-item-meta">
+                            <div class="ticket-item-date">{{ ticket.created_at|date:"d.m.Y" }}</div>
+                            <span class="status-badge status-completed">{{ ticket.get_status_display }}</span>
+                        </div>
+                    </a>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-4 px-3">
+                        <i class="fas fa-inbox fa-2x text-muted mb-2"></i>
+                        <p class="text-muted mb-0" style="font-size: 0.9rem;">Нет выполненных заявок</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

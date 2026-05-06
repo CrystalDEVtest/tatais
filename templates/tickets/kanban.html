@@ -1,0 +1,543 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Канбан-доска — ТатАИСнефть{% endblock %}
+
+{% block extra_css %}
+<style>
+    .kanban-header {
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        border-radius: var(--radius);
+        padding: 1.8rem 2rem;
+        color: white;
+        margin-bottom: 1.5rem;
+    }
+
+    .kanban-header h2 {
+        font-weight: 800;
+        margin-bottom: 0.3rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .kanban-header p {
+        opacity: 0.9;
+        margin: 0;
+    }
+
+    .kanban-board {
+        display: flex;
+        gap: 0.8rem;
+        overflow-x: auto;
+        padding-bottom: 1rem;
+        min-height: 70vh;
+    }
+
+    .kanban-board::-webkit-scrollbar {
+        height: 6px;
+    }
+
+    .kanban-board::-webkit-scrollbar-thumb {
+        background: #ccc;
+        border-radius: 3px;
+    }
+
+    .kanban-column {
+        min-width: 260px;
+        max-width: 300px;
+        flex: 1;
+        background: #f8f9fa;
+        border-radius: var(--radius);
+        display: flex;
+        flex-direction: column;
+        max-height: calc(100vh - 250px);
+    }
+
+    .kanban-column-header {
+        padding: 1rem;
+        border-radius: var(--radius) var(--radius) 0 0;
+        font-weight: 700;
+        font-size: 0.88rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-shrink: 0;
+    }
+
+    .kanban-column-header .count {
+        background: rgba(255, 255, 255, 0.3);
+        padding: 0.15rem 0.5rem;
+        border-radius: 10px;
+        font-size: 0.75rem;
+    }
+
+    .col-new .kanban-column-header { background: linear-gradient(135deg, #007bff, #0056b3); color: white; }
+    .col-assigned .kanban-column-header { background: linear-gradient(135deg, #17a2b8, #117a8b); color: white; }
+    .col-in_progress .kanban-column-header { background: linear-gradient(135deg, #ffc107, #e0a800); color: #333; }
+    .col-parts_needed .kanban-column-header { background: linear-gradient(135deg, #6c757d, #545b62); color: white; }
+    .col-awaiting_confirmation .kanban-column-header { background: linear-gradient(135deg, #6f42c1, #5a32a3); color: white; }
+    .col-completed .kanban-column-header { background: linear-gradient(135deg, #28a745, #1e7e34); color: white; }
+    .col-rejected .kanban-column-header { background: linear-gradient(135deg, #dc3545, #bd2130); color: white; }
+
+    .kanban-column-body {
+        padding: 0.5rem;
+        flex: 1;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .kanban-column-body::-webkit-scrollbar {
+        width: 4px;
+    }
+
+    .kanban-column-body::-webkit-scrollbar-thumb {
+        background: #ddd;
+        border-radius: 2px;
+    }
+
+    .kanban-card {
+        background: white;
+        border-radius: var(--radius-sm);
+        padding: 1rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        cursor: pointer;
+        transition: var(--transition);
+        border-left: 4px solid transparent;
+        position: relative;
+    }
+
+    .kanban-card:hover {
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
+        transform: translateY(-2px);
+    }
+
+    .kanban-card.priority-low { border-left-color: #28a745; }
+    .kanban-card.priority-medium { border-left-color: #ffc107; }
+    .kanban-card.priority-high { border-left-color: #fd7e14; }
+    .kanban-card.priority-critical { border-left-color: #dc3545; }
+
+    .kanban-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+    }
+
+    .kanban-card-number {
+        font-weight: 700;
+        color: var(--primary);
+        font-size: 0.82rem;
+    }
+
+    .kanban-card-customer {
+        font-weight: 600;
+        font-size: 0.85rem;
+        margin-bottom: 0.3rem;
+        color: var(--dark);
+    }
+
+    .kanban-card-address {
+        font-size: 0.78rem;
+        color: var(--gray);
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: flex-start;
+        gap: 4px;
+    }
+
+    .kanban-card-address i {
+        margin-top: 2px;
+        flex-shrink: 0;
+    }
+
+    .kanban-card-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+        padding-top: 0.5rem;
+        border-top: 1px solid #f0f0f0;
+    }
+
+    .kanban-card-service {
+        font-size: 0.72rem;
+        background: rgba(0, 152, 70, 0.08);
+        color: var(--primary);
+        padding: 0.2rem 0.5rem;
+        border-radius: 6px;
+        font-weight: 600;
+    }
+
+    .kanban-card-date {
+        font-size: 0.72rem;
+        color: #aaa;
+    }
+
+    .kanban-card .engineer-select {
+        margin-top: 0.5rem;
+    }
+
+    .kanban-card .engineer-select select {
+        font-size: 0.78rem;
+        padding: 0.3rem 0.5rem;
+        border-radius: 6px;
+    }
+
+    .kanban-card .priority-badge-sm {
+        font-size: 0.68rem;
+        padding: 0.15rem 0.4rem;
+        border-radius: 4px;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 py-4">
+    <!-- Kanban Header -->
+    <div class="kanban-header fade-in">
+        <div class="row align-items-center">
+            <div class="col">
+                <h2><i class="fas fa-columns"></i> Панель диспетчера — Канбан-доска</h2>
+                <p>Перетаскивайте заявки между колонками для изменения статуса</p>
+            </div>
+            <div class="col-auto d-flex gap-2">
+                <a href="{% url 'reports_dashboard' %}" class="btn btn-hero-primary btn-sm">
+                    <i class="fas fa-chart-bar me-1"></i> Отчёты
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Kanban Board -->
+    <div class="kanban-board">
+        <!-- Новая -->
+        <div class="kanban-column col-new slide-left">
+            <div class="kanban-column-header">
+                <span><i class="fas fa-plus-circle me-1"></i> Новая</span>
+                <span class="count">{{ new_tickets|length }}</span>
+            </div>
+            <div class="kanban-column-body" data-status="new">
+                {% for ticket in new_tickets %}
+                <div class="kanban-card priority-{{ ticket.priority|default:'low' }}" data-ticket-id="{{ ticket.id }}">
+                    <div class="kanban-card-header">
+                        <span class="kanban-card-number">#{{ ticket.ticket_number }}</span>
+                        {% if ticket.priority %}
+                        <span class="priority-badge-sm status-badge priority-{{ ticket.priority }}">
+                            {{ ticket.get_priority_display }}
+                        </span>
+                        {% endif %}
+                    </div>
+                    <div class="kanban-card-customer">{{ ticket.customer.get_full_name|default:ticket.guest_name|default:'Гость' }}</div>
+                    <div class="kanban-card-address">
+                        <i class="fas fa-map-marker-alt"></i>
+                        {{ ticket.city }}, {{ ticket.address|truncatewords:4 }}
+                    </div>
+                    <div class="kanban-card-footer">
+                        <span class="kanban-card-service">{{ ticket.get_service_type_display }}</span>
+                        <span class="kanban-card-date">{{ ticket.created_at|date:"d.m" }}</span>
+                    </div>
+                    <a href="{% url 'ticket_detail' ticket.id %}" class="btn btn-sm btn-outline-primary w-100 mt-2">
+                        <i class="fas fa-eye me-1"></i> Подробнее
+                    </a>
+                    {% if engineers %}
+                    <form method="post" action="{% url 'assign_engineer' ticket.id %}" class="engineer-select mt-2">
+                        {% csrf_token %}
+                        <select name="engineer_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                            <option value="">Назначить инженера...</option>
+                            {% for eng in engineers %}
+                            <option value="{{ eng.id }}" {% if ticket.assigned_engineer_id == eng.id %}selected{% endif %}>
+                                {{ eng.get_full_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </form>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Назначена -->
+        <div class="kanban-column col-assigned slide-up">
+            <div class="kanban-column-header">
+                <span><i class="fas fa-user-check me-1"></i> Назначена</span>
+                <span class="count">{{ assigned_tickets|length }}</span>
+            </div>
+            <div class="kanban-column-body" data-status="assigned">
+                {% for ticket in assigned_tickets %}
+                <div class="kanban-card priority-{{ ticket.priority|default:'low' }}" data-ticket-id="{{ ticket.id }}">
+                    <div class="kanban-card-header">
+                        <span class="kanban-card-number">#{{ ticket.ticket_number }}</span>
+                        {% if ticket.priority %}
+                        <span class="priority-badge-sm status-badge priority-{{ ticket.priority }}">
+                            {{ ticket.get_priority_display }}
+                        </span>
+                        {% endif %}
+                    </div>
+                    <div class="kanban-card-customer">{{ ticket.customer.get_full_name|default:ticket.guest_name|default:'Гость' }}</div>
+                    <div class="kanban-card-address">
+                        <i class="fas fa-map-marker-alt"></i>
+                        {{ ticket.city }}, {{ ticket.address|truncatewords:4 }}
+                    </div>
+                    {% if ticket.assigned_engineer %}
+                    <div style="font-size: 0.78rem; color: var(--primary); margin-bottom: 0.3rem;">
+                        <i class="fas fa-user-cog me-1"></i> {{ ticket.assigned_engineer.get_full_name }}
+                    </div>
+                    {% endif %}
+                    <div class="kanban-card-footer">
+                        <span class="kanban-card-service">{{ ticket.get_service_type_display }}</span>
+                        <span class="kanban-card-date">{{ ticket.created_at|date:"d.m" }}</span>
+                    </div>
+                    <a href="{% url 'ticket_detail' ticket.id %}" class="btn btn-sm btn-outline-primary w-100 mt-2">
+                        <i class="fas fa-eye me-1"></i> Подробнее
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- В работе -->
+        <div class="kanban-column col-in_progress slide-up">
+            <div class="kanban-column-header">
+                <span><i class="fas fa-cog fa-spin me-1"></i> В работе</span>
+                <span class="count">{{ in_progress_tickets|length }}</span>
+            </div>
+            <div class="kanban-column-body" data-status="in_progress">
+                {% for ticket in in_progress_tickets %}
+                <div class="kanban-card priority-{{ ticket.priority|default:'low' }}" data-ticket-id="{{ ticket.id }}">
+                    <div class="kanban-card-header">
+                        <span class="kanban-card-number">#{{ ticket.ticket_number }}</span>
+                        {% if ticket.priority %}
+                        <span class="priority-badge-sm status-badge priority-{{ ticket.priority }}">
+                            {{ ticket.get_priority_display }}
+                        </span>
+                        {% endif %}
+                    </div>
+                    <div class="kanban-card-customer">{{ ticket.customer.get_full_name|default:ticket.guest_name|default:'Гость' }}</div>
+                    <div class="kanban-card-address">
+                        <i class="fas fa-map-marker-alt"></i>
+                        {{ ticket.city }}, {{ ticket.address|truncatewords:4 }}
+                    </div>
+                    {% if ticket.assigned_engineer %}
+                    <div style="font-size: 0.78rem; color: var(--primary); margin-bottom: 0.3rem;">
+                        <i class="fas fa-user-cog me-1"></i> {{ ticket.assigned_engineer.get_full_name }}
+                    </div>
+                    {% endif %}
+                    <div class="kanban-card-footer">
+                        <span class="kanban-card-service">{{ ticket.get_service_type_display }}</span>
+                        <span class="kanban-card-date">{{ ticket.created_at|date:"d.m" }}</span>
+                    </div>
+                    <a href="{% url 'ticket_detail' ticket.id %}" class="btn btn-sm btn-outline-primary w-100 mt-2">
+                        <i class="fas fa-eye me-1"></i> Подробнее
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Требуется запчасть -->
+        <div class="kanban-column col-parts_needed slide-up">
+            <div class="kanban-column-header">
+                <span><i class="fas fa-puzzle-piece me-1"></i> Запчасть</span>
+                <span class="count">{{ parts_tickets|length }}</span>
+            </div>
+            <div class="kanban-column-body" data-status="parts_needed">
+                {% for ticket in parts_tickets %}
+                <div class="kanban-card priority-{{ ticket.priority|default:'low' }}" data-ticket-id="{{ ticket.id }}">
+                    <div class="kanban-card-header">
+                        <span class="kanban-card-number">#{{ ticket.ticket_number }}</span>
+                    </div>
+                    <div class="kanban-card-customer">{{ ticket.customer.get_full_name|default:ticket.guest_name|default:'Гость' }}</div>
+                    <div class="kanban-card-address">
+                        <i class="fas fa-map-marker-alt"></i>
+                        {{ ticket.city }}, {{ ticket.address|truncatewords:4 }}
+                    </div>
+                    {% if ticket.assigned_engineer %}
+                    <div style="font-size: 0.78rem; color: var(--primary); margin-bottom: 0.3rem;">
+                        <i class="fas fa-user-cog me-1"></i> {{ ticket.assigned_engineer.get_full_name }}
+                    </div>
+                    {% endif %}
+                    <div class="kanban-card-footer">
+                        <span class="kanban-card-service">{{ ticket.get_service_type_display }}</span>
+                        <span class="kanban-card-date">{{ ticket.created_at|date:"d.m" }}</span>
+                    </div>
+                    <a href="{% url 'ticket_detail' ticket.id %}" class="btn btn-sm btn-outline-primary w-100 mt-2">
+                        <i class="fas fa-eye me-1"></i> Подробнее
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Ожидает подтверждения -->
+        <div class="kanban-column col-awaiting_confirmation slide-right">
+            <div class="kanban-column-header">
+                <span><i class="fas fa-hourglass-half me-1"></i> Подтверждение</span>
+                <span class="count">{{ awaiting_tickets|length }}</span>
+            </div>
+            <div class="kanban-column-body" data-status="awaiting_confirmation">
+                {% for ticket in awaiting_tickets %}
+                <div class="kanban-card priority-{{ ticket.priority|default:'low' }}" data-ticket-id="{{ ticket.id }}">
+                    <div class="kanban-card-header">
+                        <span class="kanban-card-number">#{{ ticket.ticket_number }}</span>
+                    </div>
+                    <div class="kanban-card-customer">{{ ticket.customer.get_full_name|default:ticket.guest_name|default:'Гость' }}</div>
+                    <div class="kanban-card-address">
+                        <i class="fas fa-map-marker-alt"></i>
+                        {{ ticket.city }}, {{ ticket.address|truncatewords:4 }}
+                    </div>
+                    <div class="kanban-card-footer">
+                        <span class="kanban-card-service">{{ ticket.get_service_type_display }}</span>
+                        <span class="kanban-card-date">{{ ticket.created_at|date:"d.m" }}</span>
+                    </div>
+                    <a href="{% url 'ticket_detail' ticket.id %}" class="btn btn-sm btn-outline-primary w-100 mt-2">
+                        <i class="fas fa-eye me-1"></i> Подробнее
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Завершена -->
+        <div class="kanban-column col-completed slide-right">
+            <div class="kanban-column-header">
+                <span><i class="fas fa-check-circle me-1"></i> Завершена</span>
+                <span class="count">{{ completed_tickets|length }}</span>
+            </div>
+            <div class="kanban-column-body" data-status="completed">
+                {% for ticket in completed_tickets %}
+                <div class="kanban-card priority-{{ ticket.priority|default:'low' }}" data-ticket-id="{{ ticket.id }}">
+                    <div class="kanban-card-header">
+                        <span class="kanban-card-number">#{{ ticket.ticket_number }}</span>
+                        {% if ticket.rating %}
+                        <span style="color: #ffc107; font-size: 0.82rem;">
+                            <i class="fas fa-star"></i> {{ ticket.rating }}
+                        </span>
+                        {% endif %}
+                    </div>
+                    <div class="kanban-card-customer">{{ ticket.customer.get_full_name|default:ticket.guest_name|default:'Гость' }}</div>
+                    <div class="kanban-card-address">
+                        <i class="fas fa-map-marker-alt"></i>
+                        {{ ticket.city }}, {{ ticket.address|truncatewords:4 }}
+                    </div>
+                    <div class="kanban-card-footer">
+                        <span class="kanban-card-service">{{ ticket.get_service_type_display }}</span>
+                        <span class="kanban-card-date">{{ ticket.completed_at|date:"d.m"|default:ticket.created_at|date:"d.m" }}</span>
+                    </div>
+                    <a href="{% url 'ticket_detail' ticket.id %}" class="btn btn-sm btn-outline-success w-100 mt-2">
+                        <i class="fas fa-eye me-1"></i> Подробнее
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Отклонена -->
+        <div class="kanban-column col-rejected slide-right">
+            <div class="kanban-column-header">
+                <span><i class="fas fa-times-circle me-1"></i> Отклонена</span>
+                <span class="count">{{ rejected_tickets|length }}</span>
+            </div>
+            <div class="kanban-column-body" data-status="rejected">
+                {% for ticket in rejected_tickets %}
+                <div class="kanban-card priority-{{ ticket.priority|default:'low' }}" data-ticket-id="{{ ticket.id }}">
+                    <div class="kanban-card-header">
+                        <span class="kanban-card-number">#{{ ticket.ticket_number }}</span>
+                    </div>
+                    <div class="kanban-card-customer">{{ ticket.customer.get_full_name|default:ticket.guest_name|default:'Гость' }}</div>
+                    <div class="kanban-card-address">
+                        <i class="fas fa-map-marker-alt"></i>
+                        {{ ticket.city }}, {{ ticket.address|truncatewords:4 }}
+                    </div>
+                    <div class="kanban-card-footer">
+                        <span class="kanban-card-service">{{ ticket.get_service_type_display }}</span>
+                        <span class="kanban-card-date">{{ ticket.created_at|date:"d.m" }}</span>
+                    </div>
+                    <a href="{% url 'ticket_detail' ticket.id %}" class="btn btn-sm btn-outline-danger w-100 mt-2">
+                        <i class="fas fa-eye me-1"></i> Подробнее
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // ===== Drag & Drop с реальной сменой статуса =====
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value 
+        || '{{ csrf_token }}';
+    
+    document.querySelectorAll('.kanban-card').forEach(card => {
+        card.setAttribute('draggable', 'true');
+
+        card.addEventListener('dragstart', function(e) {
+            this.style.opacity = '0.5';
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', this.dataset.ticketId);
+        });
+
+        card.addEventListener('dragend', function() {
+            this.style.opacity = '1';
+            document.querySelectorAll('.kanban-column-body').forEach(col => {
+                col.style.background = '';
+            });
+        });
+    });
+
+    document.querySelectorAll('.kanban-column-body').forEach(col => {
+        col.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            this.style.background = 'rgba(0, 152, 70, 0.08)';
+        });
+
+        col.addEventListener('dragleave', function(e) {
+            if (!this.contains(e.relatedTarget)) {
+                this.style.background = '';
+            }
+        });
+
+        col.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.style.background = '';
+            
+            const ticketId = e.dataTransfer.getData('text/plain');
+            const newStatus = this.dataset.status;
+            
+            if (!ticketId || !newStatus) return;
+            
+            // Отправляем AJAX-запрос для смены статуса
+            fetch(`/tickets/${ticketId}/change-status/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `status=${newStatus}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Перезагружаем страницу для обновления данных
+                    window.location.reload();
+                } else {
+                    alert('Ошибка: ' + (data.error || 'Не удалось изменить статус'));
+                }
+            })
+            .catch(err => {
+                alert('Ошибка соединения: ' + err);
+            });
+        });
+    });
+</script>
+{% endblock %}

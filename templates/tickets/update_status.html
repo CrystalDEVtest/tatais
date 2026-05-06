@@ -1,0 +1,253 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Изменение статуса заявки #{{ ticket.ticket_number }} — ТатАИСнефть{% endblock %}
+
+{% block extra_css %}
+<style>
+    .update-card {
+        background: white;
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+        max-width: 650px;
+        margin: 2rem auto;
+    }
+
+    .update-card-header {
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        color: white;
+        padding: 1.5rem 2rem;
+    }
+
+    .update-card-header h3 {
+        font-weight: 800;
+        margin-bottom: 0.3rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .update-card-header p {
+        opacity: 0.9;
+        margin: 0;
+        font-size: 0.9rem;
+    }
+
+    .update-card-body {
+        padding: 2rem;
+    }
+
+    .status-options {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 0.6rem;
+    }
+
+    .status-option {
+        position: relative;
+    }
+
+    .status-option input {
+        position: absolute;
+        opacity: 0;
+    }
+
+    .status-option label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0.8rem 1rem;
+        border: 2px solid #e9ecef;
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        transition: var(--transition);
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    .status-option input:checked + label {
+        border-color: var(--primary);
+        background: rgba(0, 152, 70, 0.05);
+        color: var(--primary);
+    }
+
+    .status-option label:hover {
+        border-color: var(--secondary);
+    }
+
+    .status-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+    .btn-submit {
+        padding: 0.8rem 2rem;
+        font-weight: 700;
+    }
+
+    .current-status-display {
+        background: #f8f9fa;
+        border-radius: var(--radius-sm);
+        padding: 0.8rem 1rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.88rem;
+        margin-bottom: 1.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="update-card fade-in">
+        <div class="update-card-header">
+            <h3><i class="fas fa-exchange-alt"></i> Изменение статуса</h3>
+            <p>Заявка #{{ ticket.ticket_number }} — {{ ticket.get_service_type_display }}</p>
+        </div>
+
+        <div class="update-card-body">
+            <!-- Current Status -->
+            <div class="current-status-display">
+                <span style="color: var(--gray);">Текущий статус:</span>
+                <span class="status-badge status-{{ ticket.status }}">{{ ticket.get_status_display }}</span>
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+
+                <!-- New Status -->
+                <div class="mb-4">
+                    <label class="form-label fw-700">Новый статус</label>
+                    <div class="status-options">
+                        <div class="status-option">
+                            <input type="radio" name="status" id="s_new" value="new" required
+                                   {% if ticket.status == 'new' %}checked{% endif %}>
+                            <label for="s_new">
+                                <span class="status-dot" style="background: #007bff;"></span>
+                                Новая
+                            </label>
+                        </div>
+                        <div class="status-option">
+                            <input type="radio" name="status" id="s_assigned" value="assigned"
+                                   {% if ticket.status == 'assigned' %}checked{% endif %}>
+                            <label for="s_assigned">
+                                <span class="status-dot" style="background: #17a2b8;"></span>
+                                Назначена
+                            </label>
+                        </div>
+                        <div class="status-option">
+                            <input type="radio" name="status" id="s_in_progress" value="in_progress"
+                                   {% if ticket.status == 'in_progress' %}checked{% endif %}>
+                            <label for="s_in_progress">
+                                <span class="status-dot" style="background: #ffc107;"></span>
+                                В работе
+                            </label>
+                        </div>
+                        <div class="status-option">
+                            <input type="radio" name="status" id="s_parts" value="parts_needed"
+                                   {% if ticket.status == 'parts_needed' %}checked{% endif %}>
+                            <label for="s_parts">
+                                <span class="status-dot" style="background: #6c757d;"></span>
+                                Запчасть
+                            </label>
+                        </div>
+                        <div class="status-option">
+                            <input type="radio" name="status" id="s_awaiting" value="awaiting_confirmation"
+                                   {% if ticket.status == 'awaiting_confirmation' %}checked{% endif %}>
+                            <label for="s_awaiting">
+                                <span class="status-dot" style="background: #6f42c1;"></span>
+                                Подтверждение
+                            </label>
+                        </div>
+                        <div class="status-option">
+                            <input type="radio" name="status" id="s_completed" value="completed"
+                                   {% if ticket.status == 'completed' %}checked{% endif %}>
+                            <label for="s_completed">
+                                <span class="status-dot" style="background: #28a745;"></span>
+                                Завершена
+                            </label>
+                        </div>
+                        <div class="status-option">
+                            <input type="radio" name="status" id="s_rejected" value="rejected"
+                                   {% if ticket.status == 'rejected' %}checked{% endif %}>
+                            <label for="s_rejected">
+                                <span class="status-dot" style="background: #dc3545;"></span>
+                                Отклонена
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Engineer Assignment -->
+                {% if engineers %}
+                <div class="mb-3">
+                    <label for="id_engineer" class="form-label fw-700">Назначить инженера</label>
+                    <select name="assigned_engineer" id="id_engineer" class="form-select">
+                        <option value="">— Не назначен —</option>
+                        {% for eng in engineers %}
+                        <option value="{{ eng.id }}" {% if ticket.assigned_engineer_id == eng.id %}selected{% endif %}>
+                            {{ eng.get_full_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+
+                <!-- Priority -->
+                <div class="mb-3">
+                    <label for="id_priority" class="form-label fw-700">Приоритет</label>
+                    <select name="priority" id="id_priority" class="form-select">
+                        <option value="low" {% if ticket.priority == 'low' %}selected{% endif %}>Низкий</option>
+                        <option value="medium" {% if ticket.priority == 'medium' or not ticket.priority %}selected{% endif %}>Средний</option>
+                        <option value="high" {% if ticket.priority == 'high' %}selected{% endif %}>Высокий</option>
+                        <option value="critical" {% if ticket.priority == 'critical' %}selected{% endif %}>Критический</option>
+                    </select>
+                </div>
+
+                <!-- Estimated Time -->
+                <div class="mb-4">
+                    <label for="id_estimated_time" class="form-label fw-700">Ожидаемое время визита</label>
+                    <input type="datetime-local" name="estimated_time" id="id_estimated_time" class="form-control"
+                           value="{{ ticket.estimated_time|date:'Y-m-d\TH:i'|default:'' }}">
+                </div>
+
+                                <!-- Price / Cost -->
+                                <div class="mb-4">
+                                    <label for="id_price" class="form-label fw-700">
+                                        <i class="fas fa-ruble-sign me-1" style="color: var(--primary);"></i>
+                                        Стоимость услуги (руб.)
+                                    </label>
+                                    <input type="number" name="price" id="id_price" class="form-control"
+                                           placeholder="Например: 1500.00" min="0" step="0.01"
+                                           value="{{ ticket.price|default:'' }}">
+                                    <small class="form-text" style="color: var(--gray);">
+                                        Укажите стоимость, чтобы клиент мог оплатить услугу онлайн через СБП.
+                                        Оставьте пустым, если оплата не требуется.
+                                    </small>
+                                </div>
+
+                <!-- Comment -->
+                <div class="mb-4">
+                    <label for="id_comment" class="form-label fw-700">Комментарий</label>
+                    <textarea name="comment" id="id_comment" class="form-control" rows="3"
+                              placeholder="Укажите причину изменения или комментарий..."></textarea>
+                </div>
+
+                <!-- Buttons -->
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary btn-submit">
+                        <i class="fas fa-save me-2"></i> Сохранить изменения
+                    </button>
+                    <a href="{% url 'ticket_detail' ticket.id %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i> Назад к заявке
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

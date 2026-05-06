@@ -1,0 +1,572 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Заявка #{{ ticket.ticket_number }} — ТатАИСнефть{% endblock %}
+
+{% block extra_css %}
+<style>
+    .ticket-header {
+        background: white;
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 1.5rem 2rem;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .ticket-header-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .ticket-header-left h2 {
+        font-weight: 800;
+        font-size: 1.4rem;
+        margin: 0;
+        color: var(--dark);
+    }
+
+    .info-grid-card {
+        background: white;
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+    }
+
+    .info-grid-card .card-header-custom {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid #f0f0f0;
+        font-weight: 700;
+        font-size: 0.95rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .info-grid-card .card-header-custom i {
+        color: var(--primary);
+    }
+
+    .info-grid-card .card-body-custom {
+        padding: 1.2rem 1.5rem;
+    }
+
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        padding: 0.6rem 0;
+        border-bottom: 1px solid #f8f8f8;
+    }
+
+    .info-row:last-child {
+        border-bottom: none;
+    }
+
+    .info-row .info-label {
+        color: var(--gray);
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+
+    .info-row .info-value {
+        font-weight: 600;
+        font-size: 0.9rem;
+        text-align: right;
+        max-width: 60%;
+    }
+
+    /* Timeline */
+    .timeline {
+        position: relative;
+        padding-left: 2rem;
+    }
+
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 8px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: linear-gradient(to bottom, var(--primary), #e0e0e0);
+    }
+
+    .timeline-item {
+        position: relative;
+        padding-bottom: 1.5rem;
+    }
+
+    .timeline-item:last-child {
+        padding-bottom: 0;
+    }
+
+    .timeline-dot {
+        position: absolute;
+        left: -2rem;
+        top: 4px;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: var(--primary);
+        border: 3px solid white;
+        box-shadow: 0 0 0 2px var(--primary);
+        z-index: 1;
+    }
+
+    .timeline-dot.secondary {
+        background: #adb5bd;
+        box-shadow: 0 0 0 2px #adb5bd;
+    }
+
+    .timeline-content h6 {
+        font-weight: 700;
+        font-size: 0.88rem;
+        margin-bottom: 0.15rem;
+    }
+
+    .timeline-content p {
+        font-size: 0.82rem;
+        color: var(--gray);
+        margin: 0;
+    }
+
+    .timeline-content small {
+        color: #aaa;
+        font-size: 0.78rem;
+    }
+
+    /* Comments */
+    .comment-item {
+        display: flex;
+        gap: 1rem;
+        padding: 1rem 0;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .comment-item:last-child {
+        border-bottom: none;
+    }
+
+    .comment-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.8rem;
+        flex-shrink: 0;
+    }
+
+    .comment-body h6 {
+        font-weight: 700;
+        font-size: 0.88rem;
+        margin-bottom: 0.2rem;
+    }
+
+    .comment-body p {
+        font-size: 0.88rem;
+        color: #555;
+        margin-bottom: 0.2rem;
+    }
+
+    .comment-body small {
+        color: #aaa;
+        font-size: 0.78rem;
+    }
+
+    /* Attachments */
+    .attachment-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0.5rem 1rem;
+        background: #f8f9fa;
+        border-radius: 8px;
+        margin: 0.3rem;
+        text-decoration: none;
+        color: #333;
+        font-size: 0.85rem;
+        transition: var(--transition);
+    }
+
+    .attachment-item:hover {
+        background: rgba(0, 152, 70, 0.08);
+        color: var(--primary);
+    }
+
+    .attachment-item i {
+        font-size: 1.1rem;
+    }
+
+    /* Rating Stars */
+    .rating-stars {
+        display: flex;
+        gap: 4px;
+    }
+
+    .rating-stars .star {
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: #ddd;
+        transition: color 0.2s;
+    }
+
+    .rating-stars .star:hover,
+    .rating-stars .star.active {
+        color: #ffc107;
+    }
+
+    .action-btn-group {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .description-block {
+        background: #f8f9fa;
+        border-radius: var(--radius-sm);
+        padding: 1.2rem;
+        font-size: 0.92rem;
+        line-height: 1.7;
+        white-space: pre-wrap;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Ticket Header -->
+    <div class="ticket-header fade-in">
+        <div class="ticket-header-left">
+            <div>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb" style="font-size: 0.8rem; margin-bottom: 0.3rem;">
+                        <li class="breadcrumb-item"><a href="{% url 'home' %}" style="color: var(--gray);">Главная</a></li>
+                        <li class="breadcrumb-item active" style="color: var(--dark);">Заявка #{{ ticket.ticket_number }}</li>
+                    </ol>
+                </nav>
+                <h2><i class="fas fa-ticket-alt me-2" style="color: var(--primary);"></i> #{{ ticket.ticket_number }}</h2>
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <span class="status-badge status-{{ ticket.status }}">
+                {{ ticket.get_status_display }}
+            </span>
+            {% if ticket.priority %}
+            <span class="status-badge priority-{{ ticket.priority }}">
+                <i class="fas fa-flag me-1"></i> {{ ticket.get_priority_display }}
+            </span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Left Column -->
+        <div class="col-lg-8">
+            <!-- Description -->
+            <div class="info-grid-card mb-4 fade-in">
+                <div class="card-header-custom">
+                    <i class="fas fa-align-left"></i> Описание проблемы
+                </div>
+                <div class="card-body-custom">
+                    <div class="description-block">{{ ticket.description }}</div>
+                </div>
+            </div>
+
+            <!-- Attachments -->
+            {% if ticket.attachments.all %}
+            <div class="info-grid-card mb-4 fade-in">
+                <div class="card-header-custom">
+                    <i class="fas fa-paperclip"></i> Вложения
+                </div>
+                <div class="card-body-custom">
+                    {% for attachment in ticket.attachments.all %}
+                    <a href="{{ attachment.file.url }}" class="attachment-item" download>
+                        <i class="fas fa-{% if attachment.file.name|lower|slice:'-4:' == '.pdf' %}file-pdf text-danger{% else %}file-image text-primary{% endif %}"></i>
+                        {{ attachment.file.name|cut:"tickets/" }}
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- History Timeline -->
+            <div class="info-grid-card mb-4 fade-in">
+                <div class="card-header-custom">
+                    <i class="fas fa-history"></i> История изменений
+                </div>
+                <div class="card-body-custom">
+                    <div class="timeline">
+                        {% for event in history %}
+                        <div class="timeline-item">
+                            <div class="timeline-dot {% if forloop.counter > 1 %}secondary{% endif %}"></div>
+                            <div class="timeline-content">
+                                <h6>{{ event.get_action_display|default:event.action }}</h6>
+                                <p>
+                                    {% if event.old_value %}{{ event.get_old_value_display|default:event.old_value }} →{% endif %}
+                                    {% if event.new_value %} {{ event.get_new_value_display|default:event.new_value }}{% endif %}
+                                    {% if event.comment %} — {{ event.comment }}{% endif %}
+                                </p>
+                                <small>
+                                    {% if event.user %}<i class="fas fa-user me-1"></i>{{ event.user.get_full_name|default:event.user.username }}{% else %}<i class="fas fa-robot me-1"></i>Система{% endif %}
+                                    &nbsp;·&nbsp;
+                                    <i class="fas fa-clock me-1"></i>{{ event.created_at|date:"d.m.Y H:i" }}
+                                </small>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <p class="text-muted" style="font-size: 0.88rem;">История изменений пока пуста</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comments -->
+            <div class="info-grid-card fade-in">
+                <div class="card-header-custom">
+                    <i class="fas fa-comments"></i> Комментарии ({{ comments|length }})
+                </div>
+                <div class="card-body-custom">
+                    {% for comment in comments %}
+                    <div class="comment-item">
+                        <div class="comment-avatar">
+                            {% if comment.author.avatar %}
+                            <img src="{{ comment.author.avatar.url }}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+                            {% else %}
+                            {{ comment.author.first_name.0 }}{{ comment.author.last_name.0 }}
+                            {% endif %}
+                        </div>
+                        <div class="comment-body">
+                            <h6>{% if comment.author %}{{ comment.author.get_full_name|default:comment.author.username }}{% else %}Гость{% endif %}</h6>
+                            <p>{{ comment.text }}</p>
+                            <small><i class="fas fa-clock me-1"></i>{{ comment.created_at|date:"d.m.Y H:i" }}</small>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted" style="font-size: 0.88rem;">Комментариев пока нет</p>
+                    {% endfor %}
+
+                    <!-- Add Comment -->
+                    <div class="mt-3 pt-3 border-top">
+                        <form method="post" action="{% url 'ticket_detail' ticket.id %}">
+                            {% csrf_token %}
+                            <div class="mb-2">
+                                <textarea name="text" class="form-control" rows="3" placeholder="Напишите комментарий..." required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-sm">
+                                <i class="fas fa-paper-plane me-1"></i> Отправить
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="col-lg-4">
+            <!-- Customer Info -->
+            <div class="info-grid-card mb-4 slide-up">
+                <div class="card-header-custom">
+                    <i class="fas fa-user"></i> Информация о заказчике
+                </div>
+                <div class="card-body-custom">
+                    <div class="info-row">
+                        <span class="info-label">Имя</span>
+                        <span class="info-value">{{ ticket.customer.get_full_name|default:ticket.guest_name|default:'—' }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Телефон</span>
+                        <span class="info-value">{{ ticket.customer.phone|default:ticket.guest_phone|default:'—' }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Email</span>
+                        <span class="info-value">{{ ticket.customer.email|default:ticket.guest_email|default:'—' }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Service Info -->
+            <div class="info-grid-card mb-4 slide-up">
+                <div class="card-header-custom">
+                    <i class="fas fa-cog"></i> Информация об услуге
+                </div>
+                <div class="card-body-custom">
+                    <div class="info-row">
+                        <span class="info-label">Категория</span>
+                        <span class="info-value">{{ ticket.get_service_category_display }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Тип услуги</span>
+                        <span class="info-value">{{ ticket.get_service_type_display }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Город</span>
+                        <span class="info-value">{{ ticket.city }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Адрес</span>
+                        <span class="info-value">{{ ticket.address }}</span>
+                    </div>
+                    {% if ticket.price %}
+                    <div class="info-row" style="border-bottom: none;">
+                        <span class="info-label" style="color: var(--primary); font-weight: 600;">Стоимость</span>
+                        <span class="info-value" style="color: var(--primary); font-weight: 800; font-size: 1rem;">{{ ticket.price }} &#8381;</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Dates & Engineer -->
+            <div class="info-grid-card mb-4 slide-up">
+                <div class="card-header-custom">
+                    <i class="fas fa-calendar-alt"></i> Даты и ответственный
+                </div>
+                <div class="card-body-custom">
+                    <div class="info-row">
+                        <span class="info-label">Создана</span>
+                        <span class="info-value">{{ ticket.created_at|date:"d.m.Y H:i" }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Обновлена</span>
+                        <span class="info-value">{{ ticket.updated_at|date:"d.m.Y H:i" }}</span>
+                    </div>
+                    {% if ticket.assigned_engineer %}
+                    <div class="info-row">
+                        <span class="info-label">Инженер</span>
+                        <span class="info-value">
+                            <i class="fas fa-user-cog me-1" style="color: var(--primary);"></i>
+                            {{ ticket.assigned_engineer.get_full_name }}
+                        </span>
+                    </div>
+                    {% endif %}
+                    {% if ticket.estimated_time %}
+                    <div class="info-row">
+                        <span class="info-label">Ожидаемое время</span>
+                        <span class="info-value">{{ ticket.estimated_time }}</span>
+                    </div>
+                    {% endif %}
+                    {% if ticket.completed_at %}
+                    <div class="info-row">
+                        <span class="info-label">Завершена</span>
+                        <span class="info-value">{{ ticket.completed_at|date:"d.m.Y H:i" }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <!-- Actions -->
+            {% if user.is_authenticated %}
+            <div class="info-grid-card slide-up">
+                <div class="card-header-custom">
+                    <i class="fas fa-bolt"></i> Действия
+                </div>
+                <div class="card-body-custom">
+                    <div class="action-btn-group">
+                        {% if user.role == 'engineer' %}
+                        <a href="{% url 'ticket_update_status' ticket.id %}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-exchange-alt me-1"></i> Изменить статус
+                        </a>
+                        {% endif %}
+
+                        {% if user.role == 'dispatcher' or user.is_staff %}
+                        <a href="{% url 'ticket_update_status' ticket.id %}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-user-cog me-1"></i> Назначить
+                        </a>
+                        {% endif %}
+
+                        {% if is_customer and ticket.price and ticket.status != 'completed' and ticket.status != 'rejected' %}
+                        <a href="{% url 'payment_create' ticket.id %}" class="btn btn-success btn-sm" style="background: #28a745; border-color: #28a745;">
+                            <i class="fas fa-qrcode me-1"></i> Оплатить {{ ticket.price }} &#8381;
+                        </a>
+                        {% endif %}
+                        
+
+                        {% if ticket.status == 'completed' or ticket.status == 'rejected' %}
+                        {% if user.role == 'dispatcher' or user.is_staff or user == ticket.customer %}
+                        <a href="{% url 'ticket_delete' ticket.id %}" class="btn btn-danger btn-sm">
+                            <i class="fas fa-trash me-1"></i> Удалить заявку
+                        </a>
+                        {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Rating -->
+            {% if ticket.status == 'completed' and is_customer %}
+            <div class="info-grid-card mt-4 slide-up">
+                <div class="card-header-custom">
+                    <i class="fas fa-star"></i> Оцените работу
+                </div>
+                <div class="card-body-custom text-center">
+                    {% if ticket.customer_rating %}
+                    <div class="rating-stars mb-2">
+                        {% for i in "12345" %}
+                        <i class="fas fa-star {% if forloop.counter <= ticket.customer_rating %}active{% else %}{% endif %} star"></i>
+                        {% endfor %}
+                    </div>
+                    <p class="text-muted" style="font-size: 0.88rem;">Ваша оценка: {{ ticket.customer_rating }}/5</p>
+                    {% else %}
+                    <p class="mb-2" style="font-size: 0.88rem; color: var(--gray);">Пожалуйста, оцените качество работы</p>
+                    <form method="post" action="{% url 'ticket_detail' ticket.id %}">
+                        {% csrf_token %}
+                        <div class="rating-stars mb-2" id="ratingStars">
+                            {% for i in "12345" %}
+                            <i class="fas fa-star star" data-rating="{{ forloop.counter }}"></i>
+                            {% endfor %}
+                            <input type="hidden" name="rating" id="ratingInput" value="0">
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-sm">
+                            <i class="fas fa-check me-1"></i> Оценить
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Rating Stars
+    const stars = document.querySelectorAll('#ratingStars .star');
+    const ratingInput = document.getElementById('ratingInput');
+
+    if (stars.length && ratingInput) {
+        stars.forEach(star => {
+            star.addEventListener('mouseenter', function() {
+                const rating = parseInt(this.dataset.rating);
+                stars.forEach(s => {
+                    s.classList.toggle('active', parseInt(s.dataset.rating) <= rating);
+                });
+            });
+
+            star.addEventListener('click', function() {
+                ratingInput.value = this.dataset.rating;
+            });
+        });
+
+        document.getElementById('ratingStars').addEventListener('mouseleave', function() {
+            const rating = parseInt(ratingInput.value);
+            stars.forEach(s => {
+                s.classList.toggle('active', parseInt(s.dataset.rating) <= rating);
+            });
+        });
+    }
+</script>
+{% endblock %}
